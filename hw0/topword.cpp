@@ -62,9 +62,12 @@ int main(int argc, char *argv[])
 				for (int i = 0; i < line.length(); ++i) {
 					if (line[i] < 48 || line[i] > 122) {
 						split = true;
-						count[line.substr(0, i - last)] += 1;
+						count[line.substr(last, i - last)] += 1;
 						while (line[i] < 48 || line[i] > 122) ++i;
 						last = i;
+					}
+					if (i == line.length() - 1) {
+						count[line.substr(last)] += 1;
 					}
 				}
 				if (!split)
