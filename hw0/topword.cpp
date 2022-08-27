@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 	// this hash table keeps track of the count of each word
 	std::map<std::string, int> count;
 	// This while loop goes through all of the lines of the file until it reaches EOF (end of file)
-	while (!input_file_stream.eof()) {
+	while (!input_file_stream.eof() && input_file_stream.is_open()) {
 		std::string line(200, '\0');
 		input_file_stream >> line;
 		if (line[0] != '\0') {

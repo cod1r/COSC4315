@@ -1,0 +1,2 @@
+- Run `make` to compile `topword.cpp`
+- Run `./topword`
