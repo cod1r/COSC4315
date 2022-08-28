@@ -43,10 +43,8 @@ int main(int argc, char *argv[])
 				// this checks to see if there are any strings that are separated by punctuation (any character that isn't a number or letter)
 				// and counts that
 				int last = 0;
-				bool split = false;
 				for (int i = 0; i < line.length(); ++i) {
 					if (line[i] < 48 || line[i] > 122) {
-						split = true;
 						words.push_back(line.substr(last, i - last));
 						while (i < line.length() && (line[i] < 48 || line[i] > 122)) ++i;
 						last = i;
@@ -57,7 +55,8 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			// this checks to see if any numbers are present, if so then that means we ignore
+			// this checks to see if any numbers are present in the strings that we have found in the line, if so then that means we ignore
+			// if not, we increment the counter
 			for (std::string s : words) {
 				bool has_digit = false;
 				for (int i = 0; i < s.length(); ++i) {
@@ -70,8 +69,6 @@ int main(int argc, char *argv[])
 				}
 				count[s] += 1;
 			}
-
-
 		}
 	}
 	std::ofstream output_file_stream(output_file);
