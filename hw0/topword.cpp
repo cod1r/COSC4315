@@ -6,15 +6,59 @@
 #include <algorithm>
 #include <queue>
 
+bool validate_input(std::string input)
+{
+	if (input.find('=') == std::string::npos 
+			|| input.find(';') == std::string::npos 
+			|| input.find("input") == std::string::npos 
+			|| input.find("output") == std::string::npos) {
+		return false;
+	}
+	int semicolon_count = 0;
+	int equalsign_count = 0;
+	for (char c : input) {
+		if (c == ';')
+			++semicolon_count;
+		else if (c == '=')
+			++equalsign_count;
+	}
+	std::string::size_type input_start = input.find("input");
+	std::string::size_type output_start = input.find("output");
+	if (input.find(';') + 1 >= input.length() 
+			|| input.find('=') + 1 >= input.length() 
+			|| input.find(';') - input.find('=') + 1 <= 0 
+			|| input.find(';') < input_start 
+			|| input.find('=') < input_start) {
+		return false;
+	}
+	std::string input_file_name = input.substr(input.find('=') + 1, input.find(';') - input.find('=') - 1);
+	std::string second_part = input.substr(input.find(';') + 1);
+	if (second_part.length() == 0 || second_part.find('=') + 1 >= second_part.length()) {
+		return false;
+	}
+	std::string output_file_name = second_part.substr(second_part.find('=') + 1);
+	if (equalsign_count != 2 || semicolon_count != 1 || input_start >= output_start || input_file_name.length() == 0 || output_file_name.length() == 0) {
+		return false;
+	}
+	return true;
+}
+
 int main(int argc, char *argv[])
 {
-	if (argc == 1) {
+	if (argc != 2) {
 		std::cout << \
-			"Please provide an argument of the form \"input=<input file name>.txt;output=<output file name>.txt\"" \
+			"Please provide an argument of the form \"input=<input file name>.txt;output=<output file name>.txt\" and run the program as ./topword and provide an argument in the form previously described" \
 			<< std::endl;
 		return 0;
 	}
 	std::string input(argv[1]);
+	// checks to see if the argument provided is in the form specified
+	if (!validate_input(input)) {
+		std::cout << \
+			"Please provide an argument of the form \"input=<input file name>.txt;output=<output file name>.txt\" and run the program as ./topword and provide an argument in the form previously described" \
+			<< std::endl;
+		return 0;
+	}
 	std::string input_file(
 		input.substr(
 			input.find('=') + 1,
