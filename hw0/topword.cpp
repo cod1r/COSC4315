@@ -45,7 +45,9 @@ int main(int argc, char *argv[])
 				int last = 0;
 				for (int i = 0; i < line.length(); ++i) {
 					if (line[i] < 48 || (line[i] > 57 && line[i] < 65) || (line[i] > 90 && line[i] < 97) || line[i] > 122) {
-						words.push_back(line.substr(last, i - last));
+						if (i - last > 0) {
+							words.push_back(line.substr(last, i - last));
+						}
 						while (i < line.length() && (line[i] < 48 || line[i] > 122)) ++i;
 						last = i;
 					}
