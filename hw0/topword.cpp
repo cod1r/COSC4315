@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 						if (i - last > 0) {
 							words.push_back(line.substr(last, i - last));
 						}
-						while (i < line.length() && (line[i] < 48 || line[i] > 122)) ++i;
+						while (i < line.length() && (line[i] < 48 || (line[i] > 57 && line[i] < 65) || (line[i] > 90 && line[i] < 97) || line[i] > 122)) ++i;
 						last = i;
 					}
 					if (i == line.length() - 1 && last < line.length()) {
