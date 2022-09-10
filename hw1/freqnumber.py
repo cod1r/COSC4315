@@ -7,13 +7,16 @@ from typing import List, Tuple
 
 def sort(lst: List[Tuple[str, int]]) -> List[Tuple[str, int]]:
     def low_level_sort(lst, idx, length):
-        def compare(item, lst, acc, idx, length, added) -> List[Tuple[str, int]]:
+        def compare(item, lst, acc, idx, length) -> List[Tuple[str, int]]:
             if idx == length:
-                return acc + ([item] if not added else [])
-            if lst[idx][1] >= item[1] and not added:
-                return compare(item, lst, acc + [item], idx + 1, length, True)
-            return compare(item, lst, acc + [lst[idx]], idx + 1, length, added)
-        return reduce(lambda x, y: compare(y, x, [], 0, len(x), False), lst, [])
+                return acc + [item]
+            if lst[idx][1] >= item[1]:
+                if lst[idx][1] == item[1]:
+                    if float(lst[idx][0]) > float(item[0]):
+                        return compare(item, lst, acc + [lst[idx]], idx + 1, length)
+                return compare(lst[idx], lst, acc + [item], idx + 1, length)
+            return compare(item, lst, acc + [lst[idx]], idx + 1, length)
+        return reduce(lambda x, y: compare(y, x, [], 0, len(x)), lst, [])
     return low_level_sort(lst, 0, len(lst))
 
 
@@ -73,21 +76,43 @@ def main():
         lines = list(map(lambda x: x.strip(), IPS.readlines()))
 
     def allowed(string):
-        return len(string) > 0 and len(list(filter(lambda x: 48 <= ord(x) <= 57 or ord(x) == 46 or ord(x) == ord('-'), string))) == len(string)
+        return len(string) > 0 and len(list(filter(lambda x: ord('0') <= ord(x) <= ord('9') or ord(x) == ord('.') or ord(x) == ord('-'), string))) == len(string)
+
+    split_symbols = list(
+        filter(
+            lambda sym: not allowed(sym),
+            reduce(
+                lambda acc, line: acc + reduce(
+                    lambda cl, c: cl +
+                    [c] if c not in cl and c not in acc else cl,
+                    line,
+                    []),
+                lines,
+                []
+            )
+        )
+    )
+
     numbers = list(
         filter(
             allowed,
             reduce(
-                lambda xt, line: xt + reduce(
-                    lambda x, y: x + [y],
-                    line.split(' '),
-                    []
+                lambda acc, line: acc + reduce(
+                    lambda prev_split, split_sym: reduce(
+                        lambda acc_splits, part: acc_splits +
+                        part.split(split_sym),
+                        prev_split,
+                        []
+                    ),
+                    split_symbols,
+                    [line]
                 ),
                 lines,
                 []
             )
         )
     )
+
     unique_numbers = list(
         filter(
             allowed,
@@ -103,33 +128,57 @@ def main():
             )
         )
     )
+
     count = reduce(
         lambda x, y: update_count(y, x, unique_numbers),
         numbers,
         reduce(lambda _, __: _ + [0], unique_numbers, [])
     )
+
     pairs = pair_up(unique_numbers, count)
     integers = list(filter(lambda x: '.' not in x[0], pairs))
     reals = list(filter(lambda x: '.' in x[0], pairs))
     integers_sorted = sort(integers)
     reals_sorted = sort(reals)
+
+    def group_lst(lst):
+        def lower_level_group(lst, idx, length):
+            def insert(
+                pair: Tuple[str, int],
+                group_lst: List[List[Tuple[str, int]]],
+                acc: List[List[Tuple[str, int]]],
+                idx,
+                length,
+                added
+            ):
+                if idx == length:
+                    return acc + ([[pair]] if not added else [])
+                if pair[1] == group_lst[idx][0][1] and not added:
+                    return insert(pair, group_lst, acc + [group_lst[idx] + [pair]], idx + 1, length, True)
+                return insert(pair, group_lst, acc + [group_lst[idx]], idx + 1, length, False)
+            return reduce(lambda grouped, pair: insert(pair, grouped, [], 0, len(grouped), False), lst, [])
+        return lower_level_group(lst, 0, len(lst))
+
+    integers_sorted_grouped = group_lst(integers_sorted)
+    reals_sorted_grouped = group_lst(reals_sorted)
+
     with open(output_file, 'w') as OFS:
-        def output_to_file_int(idx, k_val, contents):
-            if k_val == 0 or idx == -1:
+        def empty_out(lst, start_contents) -> str:
+            def lower_level_empty(lower_lst: List[Tuple[str, int]], acc: str, idx: int):
+                if idx == -1:
+                    return acc
+                return lower_level_empty(lst, acc + f"{lst[idx][0]} {lst[idx][1]}\n", idx - 1)
+            return lower_level_empty(lst, start_contents, len(lst) - 1)
+
+        def output_to_file(lst: List[List[Tuple[str, int]]], idx, k_val: int, contents) -> None:
+            if idx == -1 or k_val == 0:
                 OFS.write(contents)
                 return
-            output_to_file_int(idx - 1, k_val - 1, contents +
-                               f"{integers_sorted[idx][0]} {integers_sorted[idx][1]}\n")
-
-        def output_to_file_real(idx, k_val, contents):
-            if k_val == 0 or idx == -1:
-                OFS.write(contents)
-                return
-            output_to_file_real(idx - 1, k_val - 1, contents +
-                                f"{reals_sorted[idx][0]} {reals_sorted[idx][1]}\n")
-
-        output_to_file_int(len(integers_sorted) - 1, int(k), "integer:\n")
-        output_to_file_real(len(reals_sorted) - 1, int(k), "real:\n")
+            return output_to_file(lst, idx - 1, k_val - 1, empty_out(lst[idx], contents))
+        output_to_file(integers_sorted_grouped, len(
+            integers_sorted_grouped) - 1, int(k), 'integer:\n')
+        output_to_file(reals_sorted_grouped, len(
+            reals_sorted_grouped) - 1, int(k), 'real:\n')
 
 
 if __name__ == "__main__":
