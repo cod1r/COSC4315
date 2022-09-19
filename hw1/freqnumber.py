@@ -76,11 +76,15 @@ def main():
         lines = list(map(lambda x: x.strip(), IPS.readlines()))
 
     def allowed(string):
-        return len(string) > 0 and len(list(filter(lambda x: ord('0') <= ord(x) <= ord('9') or ord(x) == ord('.') or ord(x) == ord('-'), string))) == len(string)
+        return len(string) > 0 \
+                and len(list(filter(lambda x: ord('0') <= ord(x) <= ord('9') or ord(x) == ord('.') or ord(x) == ord('-'), string))) == len(string)
+    def is_sep(string):
+        return len(string) > 0 \
+                and not ((ord('A') <= ord(string) <= ord('Z')) or (ord('a') <= ord(string) <= ord('z')))
 
     split_symbols = list(
         filter(
-            lambda sym: not allowed(sym),
+            lambda sym: not allowed(sym) and is_sep(sym),
             reduce(
                 lambda acc, line: acc + reduce(
                     lambda cl, c: cl +
@@ -117,13 +121,8 @@ def main():
         filter(
             allowed,
             reduce(
-                lambda xt, yt: xt + reduce(
-                    lambda x, y: x +
-                    [y] if y not in x and y not in xt else x,
-                    yt.split(' '),
-                    []
-                ),
-                lines,
+                lambda acc, elem: acc + ([elem] if elem not in acc else []),
+                numbers,
                 []
             )
         )
@@ -137,7 +136,7 @@ def main():
 
     pairs = pair_up(unique_numbers, count)
     integers = list(filter(lambda x: '.' not in x[0], pairs))
-    reals = list(filter(lambda x: '.' in x[0], pairs))
+    reals = list(filter(lambda x: '.' in x[0] and len(x[0]) >= 3, pairs))
     integers_sorted = sort(integers)
     reals_sorted = sort(reals)
 
