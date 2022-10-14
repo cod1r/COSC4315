@@ -4,3 +4,5 @@
 topword
 testcases/
 *.sh
+*.o
+*.asm
