@@ -4,5 +4,5 @@
 #include <stdlib.h>
 #include "words.h"
 #include <stdbool.h>
-word *lexer(char *file_name);
+words lexer(char *file_name);
 #endif

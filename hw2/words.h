@@ -4,17 +4,15 @@ typedef enum WORD_TYPE
 {
 	IDENTIFIER,
 	KEYWORD,
-	LSQBR,
-	RSQBR,
-	QUOTE,
-	NUMBER,
+	VALUE,
 } WORD_TYPE;
 typedef enum type
 {
-	INT,
+	NUMBER,
 	FLOAT,
 	STRING,
 	BOOLEAN,
+	LIST,
 } type;
 typedef struct word
 {
@@ -30,4 +28,9 @@ typedef struct list
 {
 	value_obj *values;
 } list;
+typedef struct words
+{
+	word **wds;
+	int length;
+} words;
 #endif

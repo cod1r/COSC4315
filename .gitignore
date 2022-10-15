@@ -6,3 +6,4 @@ testcases/
 *.sh
 *.o
 *.asm
+minipython
