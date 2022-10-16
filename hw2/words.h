@@ -1,5 +1,5 @@
-#ifndef __WORDS_H
-#define __WORDS_H
+#ifndef WORDS_H
+#define WORDS_H
 typedef enum WORD_TYPE
 {
 	IDENTIFIER,
@@ -33,4 +33,14 @@ typedef struct words
 	word **wds;
 	int length;
 } words;
+const char *KEYWORDS[] = {
+	"if",
+	"else",
+	"[",
+	"]",
+	"(",
+	")",
+	"=",
+	"+",
+};
 #endif
