@@ -1,5 +1,4 @@
 #include "lexer.h"
-#include "words.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
