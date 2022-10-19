@@ -1,5 +1,4 @@
 #include "lexer.h"
-#include "words.h"
 #include <string.h>
 bool check_if_keyword(char *token) {
   for (int i = 0; i < sizeof(KEYWORDS) / sizeof(KEYWORDS[0]); ++i) {
