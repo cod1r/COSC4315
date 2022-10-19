@@ -9,6 +9,8 @@ typedef enum WORD_TYPE
 	KEYWORD,
 	PUNCTUATION,
 	OPERATOR,
+	STRING_LITERAL,
+	NUMBER_LITERAL,
 } WORD_TYPE;
 typedef enum PUNCTUATION_TYPE
 {
@@ -18,6 +20,8 @@ typedef enum PUNCTUATION_TYPE
 	CLOSE_PARENTH,
 	COLON,
 	QUOTE,
+	COMMA,
+	PERIOD,
 } PUNCTUATION_TYPE;
 typedef enum OPERATOR_TYPE
 {
@@ -39,6 +43,8 @@ static const char PUNCTUATIONS[] = {
 	'\"',
 	'(',
 	')',
+	'.',
+	',',
 };
 static const char OPERATORS[] = {
 	'+',
@@ -50,5 +56,5 @@ static const char *KEYWORDS[] = {
 	"else",
 	"for",
 };
-void lexer(char *file_name);
+word **lexer(char *file_name);
 #endif
