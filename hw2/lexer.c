@@ -101,7 +101,7 @@ void lexer(char *file_name) {
         tail->next = temp_word;
         tail = temp_word;
 
-        tail->type = PUNCTUATION;
+        tail->type = OPERATOR;
         tail->value = "=";
       } break;
       case ':':
@@ -113,6 +113,7 @@ void lexer(char *file_name) {
         tail->next = temp_word;
         tail = tail->next;
 
+        tail->type = PUNCTUATION;
         tail->p_type = OPEN_SQR_BR;
         tail->value = "[";
       } break;
@@ -121,6 +122,7 @@ void lexer(char *file_name) {
         tail->next = temp_word;
         tail = tail->next;
 
+        tail->type = PUNCTUATION;
         tail->p_type = CLOSING_SQR_BR;
         tail->value = "]";
       } break;
@@ -147,15 +149,6 @@ void lexer(char *file_name) {
     while (wrd != NULL) {
       switch (wrd->type) {
       case PUNCTUATION:
-        printf("P %s\n", wrd->value);
-        break;
-      case KEYWORD:
-        printf("K\n");
-        break;
-      case IDENTIFIER:
-        printf("I %s\n", wrd->value);
-        break;
-      default: {
         switch (wrd->p_type) {
         case CLOSING_SQR_BR:
           printf("closing sqr br %s\n", wrd->value);
@@ -166,7 +159,24 @@ void lexer(char *file_name) {
         default:
           break;
         }
-      } break;
+        break;
+      case OPERATOR:
+        switch (wrd->o_type) {
+        case EQL_SIGN:
+          printf("OPERATOR %s\n", wrd->value);
+          break;
+        case PLUS_SIGN:
+          break;
+        }
+        break;
+      case KEYWORD:
+        printf("K\n");
+        break;
+      case IDENTIFIER:
+        printf("I %s\n", wrd->value);
+        break;
+      default:
+        break;
       }
       wrd = wrd->next;
     }
