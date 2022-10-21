@@ -56,5 +56,5 @@ static const char *KEYWORDS[] = {
 	"else",
 	"for",
 };
-word **lexer(char *file_name);
+word *lexer(char *file_name);
 #endif
