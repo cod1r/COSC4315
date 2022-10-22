@@ -45,12 +45,15 @@ static const char PUNCTUATIONS[] = {
 	')',
 	'.',
 	',',
+	'\'',
 };
 static const char OPERATORS[] = {
 	'+',
 	'=',
 };
 static const char *KEYWORDS[] = {
+	"pass",
+	"def",
 	"if",
 	"elif",
 	"else",

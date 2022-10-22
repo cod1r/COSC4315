@@ -52,18 +52,25 @@ bool try_identifier(int *idx, char *buffer, word *res) {
   return true;
 }
 bool try_string_literal(int *idx, char *buffer, word *res) {
-  if (buffer[*idx] != '\"' || is_whitespace(buffer[*idx])) {
+  if (buffer[*idx] != '\'' && buffer[*idx] != '\"') {
     return false;
   }
   int copy = *idx;
+  char single_or_double = buffer[copy];
   ++copy;
-  while (copy < strlen(buffer) && buffer[copy] != '\"') {
+  while (copy < strlen(buffer) && buffer[copy] != single_or_double) {
+    if (copy + 1 < strlen(buffer) && buffer[copy] == '\\' &&
+        buffer[copy + 1] != ' ') {
+      copy += 2;
+      continue;
+    }
     ++copy;
   }
-  if (copy == strlen(buffer)) {
-    printf("ERR: unclosed quote\n");
+  if (buffer[copy] != single_or_double) {
+    printf("ERR string literal not closed\n");
     exit(EXIT_FAILURE);
   }
+	++copy;
   res->type = STRING_LITERAL;
   res->value = malloc(copy - *idx + 1);
   for (int i = 0; i < copy - *idx; ++i) {
@@ -74,10 +81,11 @@ bool try_string_literal(int *idx, char *buffer, word *res) {
   return true;
 }
 bool try_number_literal(int *idx, char *buffer, word *res) {
-  if (buffer[*idx] < '0' || buffer[*idx] > '9' || is_whitespace(buffer[*idx])) {
+  if (buffer[*idx] <= '0' || buffer[*idx] > '9') {
     return false;
   }
   int copy = *idx;
+	++copy;
   while (copy < strlen(buffer) && buffer[copy] >= '0' && buffer[copy] <= '9' &&
          !is_whitespace(buffer[copy])) {
     ++copy;
@@ -116,26 +124,26 @@ bool try_keyword(int *idx, char *buffer, word *res) {
 bool try_punctuation(int *idx, char *buffer, word *res) {
   for (int i = 0; i < sizeof(PUNCTUATIONS) / sizeof(PUNCTUATIONS[0]); ++i) {
     if (buffer[*idx] == PUNCTUATIONS[i]) {
-			res->type = PUNCTUATION;
-			res->value = malloc(2);
-			res->value[0] = buffer[*idx];
-			res->value[1] = '\0';
-			++(*idx);
+      res->type = PUNCTUATION;
+      res->value = malloc(2);
+      res->value[0] = buffer[*idx];
+      res->value[1] = '\0';
+      ++(*idx);
       return true;
-		}
+    }
   }
   return false;
 }
 bool try_operator(int *idx, char *buffer, word *res) {
   for (int i = 0; i < sizeof(OPERATORS) / sizeof(OPERATORS[0]); ++i) {
     if (buffer[*idx] == OPERATORS[i]) {
-			res->type = OPERATOR;
-			res->value = malloc(2);
-			res->value[0] = buffer[*idx];
-			res->value[1] = '\0';
-			++(*idx);
+      res->type = OPERATOR;
+      res->value = malloc(2);
+      res->value[0] = buffer[*idx];
+      res->value[1] = '\0';
+      ++(*idx);
       return true;
-		}
+    }
   }
   return false;
 }
@@ -183,10 +191,10 @@ word *lexer(char *file_name) {
     } else if (try_string_literal(&idx_tokens, file_buffer, tail)) {
       tail->next = create_word();
       tail = tail->next;
-		} else if (try_punctuation(&idx_tokens, file_buffer, tail)) {
+    } else if (try_punctuation(&idx_tokens, file_buffer, tail)) {
       tail->next = create_word();
       tail = tail->next;
-		} else if (try_operator(&idx_tokens, file_buffer, tail)) {
+    } else if (try_operator(&idx_tokens, file_buffer, tail)) {
       tail->next = create_word();
       tail = tail->next;
     } else {
