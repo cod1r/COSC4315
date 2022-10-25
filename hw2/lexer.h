@@ -22,6 +22,7 @@ typedef enum PUNCTUATION_TYPE
 	QUOTE,
 	COMMA,
 	PERIOD,
+	INDENT,
 } PUNCTUATION_TYPE;
 typedef enum OPERATOR_TYPE
 {
@@ -50,6 +51,8 @@ static const char PUNCTUATIONS[] = {
 static const char OPERATORS[] = {
 	'+',
 	'=',
+	'*',
+	'-',
 };
 static const char *KEYWORDS[] = {
 	"pass",
@@ -58,6 +61,10 @@ static const char *KEYWORDS[] = {
 	"elif",
 	"else",
 	"for",
+	"True",
+	"False",
+	"return"
 };
 word *lexer(char *file_name);
+word *create_word();
 #endif
