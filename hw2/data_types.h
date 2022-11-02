@@ -1,16 +1,15 @@
-typedef enum type
-{
-	NUMBER,
-	FLOAT,
-	STRING,
-	BOOLEAN,
-	LIST,
+typedef enum type {
+  NUMBER,
+  STRING,
+  BOOLEAN,
+  LIST,
+  UNKNOWN,
+  NO_TYPE,
+	WORD,
+  NONE,
 } type;
-typedef struct value_obj
-{
-	void *bytes;
-} value_obj;
-typedef struct list
-{
-	value_obj *values;
-} list;
+
+struct value_obj {
+  type t;
+  void *obj;
+};

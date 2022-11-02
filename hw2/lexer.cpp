@@ -1,14 +1,10 @@
 #include "lexer.h"
+#include <iostream>
 #include <string.h>
-word *create_word() {
-  word *w = malloc(sizeof(word));
-  w->value = NULL;
-  w->next = NULL;
-  return w;
-}
-bool is_keyword(char *str) {
+#include <vector>
+bool is_keyword(std::string str) {
   for (int i = 0; i < sizeof(KEYWORDS) / sizeof(KEYWORDS[0]); ++i) {
-    if (strcmp(KEYWORDS[i], str) == 0) {
+    if (str == std::string(KEYWORDS[i])) {
       return true;
     }
   }
@@ -29,6 +25,8 @@ bool is_other_token(char token) {
     if (token == OPERATORS[i])
       return true;
   }
+  if (token == COMMENT_CHAR)
+    return true;
   return false;
 }
 bool try_identifier(int *idx, char *buffer, word *res) {
@@ -47,11 +45,10 @@ bool try_identifier(int *idx, char *buffer, word *res) {
     ++copy;
   }
   res->type = IDENTIFIER;
-  res->value = malloc(copy - *idx + 1);
+  res->value = std::string(copy - *idx, '\0');
   for (int i = 0; i < copy - *idx; ++i) {
     res->value[i] = buffer[i + *idx];
   }
-  res->value[copy - *idx] = '\0';
   if (is_keyword(res->value))
     return false;
   *idx = copy;
@@ -78,30 +75,36 @@ bool try_string_literal(int *idx, char *buffer, word *res) {
   }
   ++copy;
   res->type = STRING_LITERAL;
-  res->value = malloc(copy - *idx + 1);
+  res->value = std::string(copy - *idx, '\0');
   for (int i = 0; i < copy - *idx; ++i) {
     res->value[i] = buffer[i + *idx];
   }
-  res->value[copy - *idx] = '\0';
   *idx = copy;
   return true;
 }
 bool try_number_literal(int *idx, char *buffer, word *res) {
-  if (buffer[*idx] < '0' || buffer[*idx] > '9') {
+  if (buffer[*idx] < '0' or buffer[*idx] > '9') {
     return false;
   }
   int copy = *idx;
   ++copy;
-  while (copy < strlen(buffer) && buffer[copy] >= '0' && buffer[copy] <= '9' &&
-         !is_whitespace(buffer[copy])) {
+  while (copy < strlen(buffer) and buffer[copy] >= '0' and
+         buffer[copy] <= '9' and !is_whitespace(buffer[copy])) {
     ++copy;
   }
+  // takes care of floating point numbers
+  if (buffer[copy] == '.') {
+    ++copy;
+    while (copy < strlen(buffer) && buffer[copy] >= '0' &&
+           buffer[copy] <= '9' && !is_whitespace(buffer[copy])) {
+      ++copy;
+    }
+  }
   res->type = NUMBER_LITERAL;
-  res->value = malloc(copy - *idx + 1);
+  res->value = std::string(copy - *idx, '\0');
   for (int i = 0; i < copy - *idx; ++i) {
     res->value[i] = buffer[i + *idx];
   }
-  res->value[copy - *idx] = '\0';
   *idx = copy;
   return true;
 }
@@ -113,7 +116,7 @@ bool try_keyword(int *idx, char *buffer, word *res) {
          !is_whitespace(buffer[copy])) {
     ++copy;
   }
-  char *temp = malloc(copy - *idx + 1);
+  char *temp = (char *)malloc(copy - *idx + 1);
   for (int i = 0; i < copy - *idx; ++i) {
     temp[i] = buffer[i + *idx];
   }
@@ -123,12 +126,11 @@ bool try_keyword(int *idx, char *buffer, word *res) {
     return false;
   }
   res->type = KEYWORD;
-  res->value = temp;
+  res->value = std::string(temp);
   *idx = copy;
   return true;
 }
-bool try_punctuation(int *idx, char *buffer, word **res_ptr) {
-  word *res = *res_ptr;
+bool try_punctuation(int *idx, char *buffer, word *res) {
   for (int i = 0; i < sizeof(PUNCTUATIONS) / sizeof(PUNCTUATIONS[0]); ++i) {
     if (buffer[*idx] == PUNCTUATIONS[i]) {
       res->type = PUNCTUATION;
@@ -161,40 +163,9 @@ bool try_punctuation(int *idx, char *buffer, word **res_ptr) {
         res->p_type = QUOTE;
         break;
       }
-      res->value = malloc(2);
+      res->value = std::string(1, '\0');
       res->value[0] = buffer[*idx];
-      res->value[1] = '\0';
       ++(*idx);
-      // this part is to tokenize the indent level when we start a new scope
-      while (buffer[*idx] == '\n') {
-        ++(*idx);
-      }
-      if (PUNCTUATIONS[i] == ':') {
-        word *indent = create_word();
-        int indent_idx = *idx;
-        char first_whitespace = buffer[indent_idx];
-        while (buffer[indent_idx] == first_whitespace &&
-               is_whitespace(buffer[indent_idx])) {
-          ++indent_idx;
-        }
-        if (is_whitespace(buffer[indent_idx]) &&
-            buffer[indent_idx] != first_whitespace) {
-          printf("indentation has a combination of tabs and spaces: %u %u\n",
-                 first_whitespace, buffer[indent_idx]);
-          exit(EXIT_FAILURE);
-        }
-        indent->value = malloc(indent_idx - *idx + 1);
-        for (int indent_value_idx = 0; indent_value_idx < indent_idx - *idx;
-             ++indent_value_idx) {
-          indent->value[indent_value_idx] = buffer[indent_value_idx + *idx];
-        }
-        indent->value[indent_idx - *idx] = '\0';
-        indent->type = PUNCTUATION;
-        indent->p_type = INDENT;
-        res->next = indent;
-        *res_ptr = res->next;
-        *idx = indent_idx;
-      }
       return true;
     }
   }
@@ -204,16 +175,56 @@ bool try_operator(int *idx, char *buffer, word *res) {
   for (int i = 0; i < sizeof(OPERATORS) / sizeof(OPERATORS[0]); ++i) {
     if (buffer[*idx] == OPERATORS[i]) {
       res->type = OPERATOR;
-      res->value = malloc(2);
+      if (OPERATORS[i] == '=') {
+        res->o_type = EQL_SIGN;
+      } else if (OPERATORS[i] == '+') {
+        res->o_type = PLUS_SIGN;
+      }
+      res->value = std::string(1, '\0');
       res->value[0] = buffer[*idx];
-      res->value[1] = '\0';
       ++(*idx);
       return true;
     }
   }
   return false;
 }
-word *lexer(char *file_name) {
+bool try_whitespace(int *idx, char *buffer, word *res) {
+  if (!is_whitespace(buffer[*idx]))
+    return false;
+  int copy = *idx;
+  while (is_whitespace(buffer[copy])) {
+    ++copy;
+  }
+  res->value = std::string(copy - *idx, '\0');
+  for (int i = 0; i < copy - *idx; ++i) {
+    res->value[i] = buffer[i + *idx];
+  }
+  res->type = WHITESPACE;
+  *idx = copy;
+  return true;
+}
+bool try_comment(int *idx, char *buffer, word *res) {
+  if (buffer[*idx] != COMMENT_CHAR) {
+    return false;
+  }
+  int copy = *idx;
+  while (copy < strlen(buffer) and buffer[copy] != '\n') {
+    if (copy + 1 < strlen(buffer) and buffer[copy] == '\\' and
+        buffer[copy + 1] == '\n') {
+      copy += 2;
+      continue;
+    }
+    ++copy;
+  }
+  res->value = std::string(copy - *idx, '\0');
+  for (size_t i = 0; i < copy - *idx; ++i) {
+    res->value[i] = buffer[i + *idx];
+  }
+  res->type = COMMENT;
+  *idx = copy;
+  return true;
+}
+std::vector<word> lexer(char *file_name) {
   FILE *fp = fopen(file_name, "r");
   if (fp == NULL) {
     printf("file not found");
@@ -225,49 +236,35 @@ word *lexer(char *file_name) {
     ++length_of_file;
   }
   fseek(fp, 0, SEEK_SET);
-  char *file_buffer = malloc(length_of_file);
+  char *file_buffer = (char *)malloc(length_of_file);
   long long idx = 0;
   while ((c = getc(fp)) != EOF) {
     file_buffer[idx++] = c;
   }
   fclose(fp);
   int idx_tokens = 0;
-  word *head = NULL;
-  word *tail = head;
+  std::vector<word> words;
   while (idx_tokens < strlen(file_buffer)) {
-    if (tail == NULL && head == NULL) {
-      head = create_word();
-      tail = head;
-    }
-    if (try_keyword(&idx_tokens, file_buffer, tail)) {
-      tail->next = create_word();
-      tail = tail->next;
-    } else if (try_identifier(&idx_tokens, file_buffer, tail)) {
-      tail->next = create_word();
-      tail = tail->next;
-    } else if (try_number_literal(&idx_tokens, file_buffer, tail)) {
-      tail->next = create_word();
-      tail = tail->next;
-    } else if (try_string_literal(&idx_tokens, file_buffer, tail)) {
-      tail->next = create_word();
-      tail = tail->next;
-    } else if (try_punctuation(&idx_tokens, file_buffer, &tail)) {
-      tail->next = create_word();
-      tail = tail->next;
-    } else if (try_operator(&idx_tokens, file_buffer, tail)) {
-      tail->next = create_word();
-      tail = tail->next;
+    word current;
+    if (try_keyword(&idx_tokens, file_buffer, &current)) {
+      words.push_back(current);
+    } else if (try_identifier(&idx_tokens, file_buffer, &current)) {
+      words.push_back(current);
+    } else if (try_number_literal(&idx_tokens, file_buffer, &current)) {
+      words.push_back(current);
+    } else if (try_string_literal(&idx_tokens, file_buffer, &current)) {
+      words.push_back(current);
+    } else if (try_punctuation(&idx_tokens, file_buffer, &current)) {
+      words.push_back(current);
+    } else if (try_operator(&idx_tokens, file_buffer, &current)) {
+      words.push_back(current);
+    } else if (try_whitespace(&idx_tokens, file_buffer, &current)) {
+      words.push_back(current);
+    } else if (try_comment(&idx_tokens, file_buffer, &current)) {
+      words.push_back(current);
     } else {
       ++idx_tokens;
     }
   }
-  word *temp_tail = head;
-  while (temp_tail != NULL) {
-    if (temp_tail->next == tail) {
-      free(temp_tail->next);
-      temp_tail->next = NULL;
-    }
-    temp_tail = temp_tail->next;
-  }
-  return head;
+  return words;
 }

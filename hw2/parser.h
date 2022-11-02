@@ -1,10 +1,12 @@
 #ifndef PARSE_H
 #define PARSE_H
-typedef struct BadMap {
-	size_t
-	char *keys[
-} BadMap;
-typedef struct data_node {
-} data_node;
-void parse();
+#include "data_types.h"
+#include "lexer.h"
+#include <string>
+#include <vector>
+struct data_node {
+  value_obj val;
+};
+std::vector<data_node> parse(std::vector<word>);
+std::vector<data_node> create_data_node();
 #endif
