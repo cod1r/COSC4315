@@ -1,3 +1,4 @@
+#include "interpreter.h"
 #include "lexer.h"
 #include "parser.h"
 #include <iostream>
@@ -12,20 +13,5 @@ int main(int argc, char *argv[]) {
   }
   std::vector<word> words = lexer(argv[1]);
   std::vector<data_node> nodes = parse(words);
-  for (data_node dn : nodes) {
-    switch (dn.val.t) {
-		case UNKNOWN:
-			std::cout << *(std::string*)dn.val.obj << std::endl;
-			break;
-    case NUMBER:
-      std::cout << *(long long *)dn.val.obj << std::endl;
-      break;
-    case STRING:
-      std::cout << *(std::string *)dn.val.obj << std::endl;
-      break;
-		case WORD:
-			std::cout << (*(word*)dn.val.obj).value << std::endl;
-			break;
-    }
-  }
+  run(nodes);
 }

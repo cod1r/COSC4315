@@ -112,7 +112,7 @@ bool try_keyword(int *idx, char *buffer, word *res) {
   if (is_whitespace(buffer[*idx]))
     return false;
   int copy = *idx;
-  while (copy < strlen(buffer) && !is_other_token(buffer[copy]) &&
+  while (copy < strlen(buffer) and !is_other_token(buffer[copy]) and
          !is_whitespace(buffer[copy])) {
     ++copy;
   }

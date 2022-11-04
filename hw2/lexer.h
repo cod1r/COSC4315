@@ -44,8 +44,7 @@ static const char OPERATORS[] = {
     '*',
     '-',
 };
-static const char *KEYWORDS[] = {
-    "pass", "def", "if", "elif", "else", "for", "True", "False", "return",
-};
+static const char *KEYWORDS[] = {"pass", "def",  "if",    "elif",   "else",
+                                 "for",  "True", "False", "return", "print"};
 std::vector<word> lexer(char *file_name);
 #endif

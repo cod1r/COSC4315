@@ -3,10 +3,11 @@ typedef enum type {
   STRING,
   BOOLEAN,
   LIST,
-  UNKNOWN,
+  IDENTIFIER_NODE,
   NO_TYPE,
-	WORD,
+  WORD,
   NONE,
+  KEYWORD_NODE,
 } type;
 
 struct value_obj {
