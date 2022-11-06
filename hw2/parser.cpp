@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+Expression parse2(std::vector<word> words) { Expression program; }
+
 std::vector<data_node> parse(std::vector<word> words) {
   std::vector<data_node> nodes;
   for (size_t i = 0; i < words.size();) {
@@ -109,13 +111,13 @@ std::vector<data_node> parse(std::vector<word> words) {
       case QUOTE:
         break;
       case COMMA: {
-				data_node comma_node;
-				comma_node.val.t = WORD;
-				comma_node.val.obj = new word;
-				*(word*)comma_node.val.obj = wrd;
-				nodes.push_back(comma_node);
-				++i;
-			}break;
+        data_node comma_node;
+        comma_node.val.t = WORD;
+        comma_node.val.obj = new word;
+        *(word *)comma_node.val.obj = wrd;
+        nodes.push_back(comma_node);
+        ++i;
+      } break;
       case PERIOD:
         break;
       }

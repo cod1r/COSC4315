@@ -27,6 +27,7 @@ typedef enum OPERATOR_TYPE {
   PLUS_SIGN,
   MULTIPLY,
   SUBTRACT,
+  DIVIDE,
 } OPERATOR_TYPE;
 struct word {
   WORD_TYPE type;

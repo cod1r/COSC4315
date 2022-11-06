@@ -280,14 +280,14 @@ void run(std::vector<data_node> nodes) {
                            OPEN_PARENTH) {
               confirm_stk.pop();
             } else if (temp_word.p_type == COMMA) {
-							data_node comma_so_space;
-							comma_so_space.val.t = STRING;
-							comma_so_space.val.obj = new std::string(3, ' ');
-							print_values.push_back(comma_so_space);
-						}
+              data_node comma_so_space;
+              comma_so_space.val.t = STRING;
+              comma_so_space.val.obj = new std::string(3, ' ');
+              print_values.push_back(comma_so_space);
+            }
           } else if (nodes[node_idx_local].val.t == NUMBER or
                      nodes[node_idx_local].val.t == IDENTIFIER_NODE or
-										 nodes[node_idx_local].val.t == STRING) {
+                     nodes[node_idx_local].val.t == STRING) {
             print_values.push_back(nodes[node_idx_local]);
           }
         }
@@ -321,23 +321,23 @@ void run(std::vector<data_node> nodes) {
               std::cout << "]";
             }
           } else if (prnt_value_node.val.t == STRING) {
-						std::string str_val = *(std::string*)prnt_value_node.val.obj;
-						std::cout << std::string(str_val.begin() + 1, str_val.end() - 1);
-					}
+            std::string str_val = *(std::string *)prnt_value_node.val.obj;
+            std::cout << std::string(str_val.begin() + 1, str_val.end() - 1);
+          }
         }
-				std::cout << std::endl;
+        std::cout << std::endl;
         node_idx = node_idx_local;
       } else if (keyword == "if") {
       } else {
         throw std::runtime_error("unimplemented keyword");
       }
     } break;
-		case WORD:
-			++node_idx;
-			break;
-		default:
-			throw std::runtime_error("unimplemented node type");
-			break;
+    case WORD:
+      ++node_idx;
+      break;
+    default:
+      throw std::runtime_error("unimplemented node type");
+      break;
     }
   }
 }
