@@ -4,7 +4,9 @@
 #include "lexer.h"
 #include <string>
 #include <vector>
-#define NUMBER_TYPE (long long)
+#define NUM_TYPE long long
+#define STR_TYPE std::string
+#define OP_TYPE char
 struct data_node {
   value_obj val;
 };
@@ -19,10 +21,12 @@ typedef enum ExprType {
   FunctionCall_t,
   If_t,
   Conditional_t,
+  List_t,
 } ExprType;
 typedef enum LitType {
   Num_t,
   Str_t,
+  Op_t,
 } LitType;
 struct Expression {
   ExprType expr_type;
@@ -34,28 +38,34 @@ struct Identifier : public Expression {
   std::string name;
 };
 struct FunctionDeclaration : public Expression {
-	Identifier identifier;
-	std::vector<Identifier> args;
-	std::vector<Expression> body;
+  Identifier identifier;
+  std::vector<Identifier> args;
+  std::vector<Expression> body;
 };
 struct Condition : public Expression {
-	std::vector<Expression> body;
+  LitType lit;
+  Condition *Left = nullptr;
+  Condition *Right = nullptr;
 };
 struct If : public Expression {
-	Condition condition;
-	std::vector<Expression> body;
+  Condition condition;
+  std::vector<Expression> body;
 };
 struct Literal : public Expression {
   LitType lit_type;
   void *value;
 };
 struct BinaryExpression : public Expression {
-  OPERATOR_TYPE op_type;
-  Expression Left;
-  Expression Right;
+  Literal lit;
+  BinaryExpression *Left = nullptr;
+  BinaryExpression *Right = nullptr;
+};
+struct ListExpression : public Expression {
+  std::vector<Expression> members;
 };
 struct Program : public Expression {
   std::vector<Expression> body;
 };
 Expression parse2(std::vector<word>);
+bool try_binary_expr(std::vector<word>);
 #endif

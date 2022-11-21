@@ -9,3 +9,6 @@ for i in range(4):
 hi = 1 + \
         2
 hi_2 = (2 if True else False) + (1 if False else True)
+val = input()
+lst = [1, 2, 3, 4, 5 if len(val) > 0 else 0]
+print(lst)

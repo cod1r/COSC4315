@@ -1,10 +1,11 @@
 #include "lexer.h"
 #include <iostream>
 #include <string.h>
+#include <string>
 #include <vector>
 bool is_keyword(std::string str) {
-  for (int i = 0; i < sizeof(KEYWORDS) / sizeof(KEYWORDS[0]); ++i) {
-    if (str == std::string(KEYWORDS[i])) {
+  for (int i = 0; i < KEYWORDS.size(); ++i) {
+    if (str == KEYWORDS[i]) {
       return true;
     }
   }
@@ -16,26 +17,43 @@ bool is_whitespace(char token) {
   }
   return false;
 }
-bool is_other_token(char token) {
-  for (int i = 0; i < sizeof(PUNCTUATIONS) / sizeof(PUNCTUATIONS[0]); ++i) {
-    if (token == PUNCTUATIONS[i])
+bool is_other_token(size_t start, char *buffer) {
+  for (size_t i = 0; i < PUNCTUATIONS.size(); ++i) {
+    if (start + PUNCTUATIONS[i].length() - 1 >= strlen(buffer)) {
+      continue;
+    }
+    std::string part = std::string(PUNCTUATIONS[i].length(), '\0');
+    for (size_t part_idx = 0; part_idx < PUNCTUATIONS[i].length(); ++part_idx) {
+      part[part_idx] = buffer[start + part_idx];
+    }
+    if (part == PUNCTUATIONS[i]) {
       return true;
+    }
   }
-  for (int i = 0; i < sizeof(OPERATORS) / sizeof(OPERATORS[0]); ++i) {
-    if (token == OPERATORS[i])
+  for (size_t i = 0; i < OPERATORS.size(); ++i) {
+    if (start + OPERATORS[i].length() - 1 >= strlen(buffer)) {
+      continue;
+    }
+    std::string part = std::string(OPERATORS[i].length(), '\0');
+    for (size_t part_idx = 0; part_idx < OPERATORS[i].length(); ++part_idx) {
+      part[part_idx] = buffer[start + part_idx];
+    }
+    if (part == OPERATORS[i]) {
       return true;
+    }
   }
-  if (token == COMMENT_CHAR)
+  if (buffer[start] == COMMENT_CHAR) {
     return true;
+  }
   return false;
 }
-bool try_identifier(int *idx, char *buffer, word *res) {
-  int copy = *idx;
+bool try_identifier(size_t *idx, char *buffer, word *res) {
+  size_t copy = *idx;
   if ((buffer[copy] >= '0' && buffer[copy] <= '9') ||
-      is_whitespace(buffer[copy]) || is_other_token(buffer[copy]))
+      is_whitespace(buffer[copy]) || is_other_token(copy, buffer))
     return false;
   ++copy;
-  while (copy < strlen(buffer) && !is_other_token(buffer[copy]) &&
+  while (copy < strlen(buffer) && !is_other_token(copy, buffer) &&
          !is_whitespace(buffer[copy])) {
     if (!((buffer[copy] >= '0' && buffer[copy] <= '9') ||
           (buffer[copy] >= 'a' && buffer[copy] <= 'z') ||
@@ -44,17 +62,21 @@ bool try_identifier(int *idx, char *buffer, word *res) {
     }
     ++copy;
   }
+  if (is_other_token(copy - 1, buffer)) {
+    return false;
+  }
   res->type = IDENTIFIER;
   res->value = std::string(copy - *idx, '\0');
-  for (int i = 0; i < copy - *idx; ++i) {
+  for (size_t i = 0; i < copy - *idx; ++i) {
     res->value[i] = buffer[i + *idx];
   }
-  if (is_keyword(res->value))
+  if (is_keyword(res->value)) {
     return false;
+  }
   *idx = copy;
   return true;
 }
-bool try_string_literal(int *idx, char *buffer, word *res) {
+bool try_string_literal(size_t *idx, char *buffer, word *res) {
   if (buffer[*idx] != '\'' && buffer[*idx] != '\"') {
     return false;
   }
@@ -82,7 +104,7 @@ bool try_string_literal(int *idx, char *buffer, word *res) {
   *idx = copy;
   return true;
 }
-bool try_number_literal(int *idx, char *buffer, word *res) {
+bool try_number_literal(size_t *idx, char *buffer, word *res) {
   if (buffer[*idx] < '0' or buffer[*idx] > '9') {
     return false;
   }
@@ -108,11 +130,11 @@ bool try_number_literal(int *idx, char *buffer, word *res) {
   *idx = copy;
   return true;
 }
-bool try_keyword(int *idx, char *buffer, word *res) {
+bool try_keyword(size_t *idx, char *buffer, word *res) {
   if (is_whitespace(buffer[*idx]))
     return false;
-  int copy = *idx;
-  while (copy < strlen(buffer) and !is_other_token(buffer[copy]) and
+  size_t copy = *idx;
+  while (copy < strlen(buffer) and !is_other_token(copy, buffer) and
          !is_whitespace(buffer[copy])) {
     ++copy;
   }
@@ -121,7 +143,8 @@ bool try_keyword(int *idx, char *buffer, word *res) {
     temp[i] = buffer[i + *idx];
   }
   temp[copy - *idx] = '\0';
-  if (!is_keyword(temp)) {
+  std::string temp_str = std::string(temp);
+  if (!is_keyword(temp_str)) {
     free(temp);
     return false;
   }
@@ -130,68 +153,76 @@ bool try_keyword(int *idx, char *buffer, word *res) {
   *idx = copy;
   return true;
 }
-bool try_punctuation(int *idx, char *buffer, word *res) {
-  for (int i = 0; i < sizeof(PUNCTUATIONS) / sizeof(PUNCTUATIONS[0]); ++i) {
-    if (buffer[*idx] == PUNCTUATIONS[i]) {
+bool try_punctuation(size_t *idx, char *buffer, word *res) {
+  for (size_t i = 0; i < PUNCTUATIONS.size(); ++i) {
+    if (*idx + PUNCTUATIONS[i].length() - 1 >= strlen(buffer)) {
+      continue;
+    }
+    std::string part = std::string(PUNCTUATIONS[i].length(), '\0');
+    for (size_t temp_idx = 0; temp_idx < PUNCTUATIONS[i].length(); ++temp_idx) {
+      part[temp_idx] = buffer[temp_idx + *idx];
+    }
+    if (part == PUNCTUATIONS[i]) {
       res->type = PUNCTUATION;
-      switch (PUNCTUATIONS[i]) {
-      case ':':
+      if (PUNCTUATIONS[i] == ":") {
         res->p_type = COLON;
-        break;
-      case '[':
+      } else if (PUNCTUATIONS[i] == "[") {
         res->p_type = OPEN_SQR_BR;
-        break;
-      case ']':
+      } else if (PUNCTUATIONS[i] == "]") {
         res->p_type = CLOSING_SQR_BR;
-        break;
-      case '\"':
+      } else if (PUNCTUATIONS[i] == "\"") {
         res->p_type = QUOTE;
-        break;
-      case '(':
+      } else if (PUNCTUATIONS[i] == "(") {
         res->p_type = OPEN_PARENTH;
-        break;
-      case ')':
+      } else if (PUNCTUATIONS[i] == ")") {
         res->p_type = CLOSE_PARENTH;
-        break;
-      case '.':
+      } else if (PUNCTUATIONS[i] == ".") {
         res->p_type = PERIOD;
-        break;
-      case ',':
+      } else if (PUNCTUATIONS[i] == ",") {
         res->p_type = COMMA;
-        break;
-      case '\'':
+      } else if (PUNCTUATIONS[i] == "\'") {
         res->p_type = QUOTE;
-        break;
       }
-      res->value = std::string(1, '\0');
-      res->value[0] = buffer[*idx];
-      ++(*idx);
+      res->value = part;
+      (*idx) += part.length();
       return true;
     }
   }
   return false;
 }
-bool try_operator(int *idx, char *buffer, word *res) {
-  for (int i = 0; i < sizeof(OPERATORS) / sizeof(OPERATORS[0]); ++i) {
-    if (buffer[*idx] == OPERATORS[i]) {
+bool try_operator(size_t *idx, char *buffer, word *res) {
+  for (size_t i = 0; i < OPERATORS.size(); ++i) {
+    if (*idx + OPERATORS[i].length() >= strlen(buffer)) {
+      continue;
+    }
+    std::string part = std::string(OPERATORS[i].length(), '\0');
+    for (size_t temp_idx = 0; temp_idx < OPERATORS[i].length(); ++temp_idx) {
+      part[temp_idx] = buffer[temp_idx + *idx];
+    }
+    if (part == OPERATORS[i]) {
       res->type = OPERATOR;
-      if (OPERATORS[i] == '=') {
+      if (OPERATORS[i] == "=") {
         res->o_type = EQL_SIGN;
-      } else if (OPERATORS[i] == '+') {
+      } else if (OPERATORS[i] == "+") {
         res->o_type = PLUS_SIGN;
+      } else if (OPERATORS[i] == "-") {
+        res->o_type = SUBTRACT;
+      } else if (OPERATORS[i] == "==") {
+        res->o_type = EQUAL_BOOL;
+      } else if (OPERATORS[i] == "!=") {
+        res->o_type = NOT_EQUAL_TO;
       }
-      res->value = std::string(1, '\0');
-      res->value[0] = buffer[*idx];
-      ++(*idx);
+      res->value = part;
+      (*idx) += part.length();
       return true;
     }
   }
   return false;
 }
-bool try_whitespace(int *idx, char *buffer, word *res) {
+bool try_whitespace(size_t *idx, char *buffer, word *res) {
   if (!is_whitespace(buffer[*idx]))
     return false;
-  int copy = *idx;
+  size_t copy = *idx;
   while (is_whitespace(buffer[copy])) {
     ++copy;
   }
@@ -203,7 +234,7 @@ bool try_whitespace(int *idx, char *buffer, word *res) {
   *idx = copy;
   return true;
 }
-bool try_comment(int *idx, char *buffer, word *res) {
+bool try_comment(size_t *idx, char *buffer, word *res) {
   if (buffer[*idx] != COMMENT_CHAR) {
     return false;
   }
@@ -242,7 +273,7 @@ std::vector<word> lexer(char *file_name) {
     file_buffer[idx++] = c;
   }
   fclose(fp);
-  int idx_tokens = 0;
+  size_t idx_tokens = 0;
   std::vector<word> words;
   while (idx_tokens < strlen(file_buffer)) {
     word current;

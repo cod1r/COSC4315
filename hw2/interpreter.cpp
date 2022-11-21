@@ -336,6 +336,7 @@ void run(std::vector<data_node> nodes) {
       ++node_idx;
       break;
     default:
+      std::cout << current_node.val.t << std::endl;
       throw std::runtime_error("unimplemented node type");
       break;
     }

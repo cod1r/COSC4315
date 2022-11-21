@@ -28,6 +28,12 @@ typedef enum OPERATOR_TYPE {
   MULTIPLY,
   SUBTRACT,
   DIVIDE,
+  GREATER_THAN,
+  LESS_THAN,
+  NOT_EQUAL_TO,
+  LESS_THAN_EQL_TO,
+  GREATER_THAN_EQL_TO,
+  EQUAL_BOOL,
 } OPERATOR_TYPE;
 struct word {
   WORD_TYPE type;
@@ -36,16 +42,15 @@ struct word {
   OPERATOR_TYPE o_type;
 };
 static const char COMMENT_CHAR = '#';
-static const char PUNCTUATIONS[] = {
-    ':', '[', ']', '\"', '(', ')', '.', ',', '\'',
+static const std::vector<std::string> PUNCTUATIONS = {
+    ":", "[", "]", "\"", "(", ")", ".", ",", "\'",
 };
-static const char OPERATORS[] = {
-    '+',
-    '=',
-    '*',
-    '-',
+static const std::vector<std::string> OPERATORS = {
+    "==", "!=", "<", ">", ">=", "<=", "//", "/", "+", "=", "*", "-",
 };
-static const char *KEYWORDS[] = {"pass", "def",  "if",    "elif",   "else",
-                                 "for",  "True", "False", "return", "print"};
+static const std::vector<std::string> KEYWORDS = {
+    "pass", "def",   "if",     "elif",  "else", "for",
+    "True", "False", "return", "print", "not",
+};
 std::vector<word> lexer(char *file_name);
 #endif
