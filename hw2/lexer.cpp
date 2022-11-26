@@ -211,6 +211,14 @@ bool try_operator(size_t *idx, char *buffer, word *res) {
         res->o_type = EQUAL_BOOL;
       } else if (OPERATORS[i] == "!=") {
         res->o_type = NOT_EQUAL_TO;
+      } else if (OPERATORS[i] == "<=") {
+        res->o_type = LESS_THAN_EQL_TO;
+      } else if (OPERATORS[i] == ">=") {
+        res->o_type = GREATER_THAN_EQL_TO;
+      } else if (OPERATORS[i] == ">") {
+        res->o_type = GREATER_THAN;
+      } else if (OPERATORS[i] == "<") {
+        res->o_type = LESS_THAN;
       }
       res->value = part;
       (*idx) += part.length();

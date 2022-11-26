@@ -17,8 +17,6 @@ NUM_TYPE parse_num_literal(word w) {
   return num;
 }
 
-Expression construct_binary_expr(std::vector<word> words) {}
-
 bool try_binary_expr(std::vector<word> words, size_t *word_idx) {
   size_t initial_word_idx = *word_idx;
   for (size_t binary_expr_word_idx = 0; binary_expr_word_idx < words.size();
@@ -56,11 +54,15 @@ bool try_binary_expr(std::vector<word> words, size_t *word_idx) {
   return true;
 }
 
-size_t try_assignment_expr(size_t starting, std::vector<word> words) {}
+bool check_object_access(std::vector<word> words) {}
 
-size_t try_element_access(size_t starting, std::vector<word> words) {}
-
-size_t try_list_expr(size_t starting, std::vector<word> words) {}
+Expression parse_exact(std::vector<word> words) {
+  for (size_t word_idx = 0; word_idx < words.size();) {
+    if (check_object_access(std::vector<word>(words.begin() + word_idx,
+                                              words.begin() + word_idx + 4))) {
+    }
+  }
+}
 
 Expression parse2(std::vector<word> &words) {
   size_t words_idx = 0;
@@ -142,7 +144,11 @@ std::vector<data_node> parse(std::vector<word> words) {
       switch (wrd.p_type) {
       case COLON:
         // COLON WILL EITHER BE A SLICE OR START OF NEW SCOPE OR TYPE ANNOTATION
-
+				data_node colon_node;
+				colon_node.val.t = WORD;
+				colon_node.val.obj = new word;
+				*(word*)colon_node.val.obj = wrd;
+				nodes.push_back(colon_node);
         ++i;
         break;
       case OPEN_SQR_BR: {
@@ -273,8 +279,16 @@ std::vector<data_node> parse(std::vector<word> words) {
         nodes.push_back(plus);
         ++i;
       } break;
+      case EQUAL_BOOL: {
+        data_node eql_bool;
+        eql_bool.val.t = WORD;
+        eql_bool.val.obj = new word;
+        *(word *)eql_bool.val.obj = wrd;
+        nodes.push_back(eql_bool);
+        ++i;
+      } break;
       default:
-        throw std::runtime_error(std::to_string(wrd.o_type));
+        throw std::runtime_error("unknown operator: " + wrd.value);
         break;
       }
       break;

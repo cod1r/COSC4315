@@ -49,8 +49,7 @@ static const std::vector<std::string> OPERATORS = {
     "==", "!=", "<", ">", ">=", "<=", "//", "/", "+", "=", "*", "-",
 };
 static const std::vector<std::string> KEYWORDS = {
-    "pass", "def",   "if",     "elif",  "else", "for",
-    "True", "False", "return", "print", "not",
-};
+    "pass",  "def",    "if",    "elif", "else", "for",  "True",
+    "False", "return", "print", "not",  "len",  "while"};
 std::vector<word> lexer(char *file_name);
 #endif

@@ -22,38 +22,54 @@ typedef enum ExprType {
   If_t,
   Conditional_t,
   List_t,
+  WORD_UNKNOWN,
+  ObjectAccess,
 } ExprType;
 typedef enum LitType {
   Num_t,
   Str_t,
   Op_t,
 } LitType;
+typedef enum AccessType {
+  string_t,
+  num_t,
+  identifier_t,
+  obj_access_t,
+} AccessType;
 struct Expression {
-  ExprType expr_type;
+  ExprType expr_type = WORD_UNKNOWN;
   size_t start;
   size_t end;
   size_t indent_lvl;
 };
-struct Identifier : public Expression {
-  std::string name;
+struct WORD_EXPR : public Expression {
+  ExprType expr_type;
+  std::vector<word> words;
 };
-struct FunctionDeclaration : public Expression {
+struct Identifier : public Expression {
+  word id;
+};
+struct ObjectAccessExpr : public WORD_EXPR {
+  Identifier identifier;
+  AccessType access_t;
+  void *accessor;
+};
+struct FunctionDeclaration : public WORD_EXPR {
   Identifier identifier;
   std::vector<Identifier> args;
   std::vector<Expression> body;
 };
+struct Literal : public WORD_EXPR {
+  LitType lit_type;
+};
 struct Condition : public Expression {
-  LitType lit;
+  Literal lit;
   Condition *Left = nullptr;
   Condition *Right = nullptr;
 };
 struct If : public Expression {
   Condition condition;
   std::vector<Expression> body;
-};
-struct Literal : public Expression {
-  LitType lit_type;
-  void *value;
 };
 struct BinaryExpression : public Expression {
   Literal lit;

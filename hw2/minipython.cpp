@@ -12,6 +12,9 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
   std::vector<word> words = lexer(argv[1]);
+  // for (word w : words) {
+  //	std::cout << w.value << std::endl;
+  // }
   std::vector<data_node> nodes = parse(words);
   run(nodes);
 }
