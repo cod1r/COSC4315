@@ -227,18 +227,25 @@ bool try_operator(size_t *idx, char *buffer, word *res) {
   }
   return false;
 }
-bool try_whitespace(size_t *idx, char *buffer, word *res) {
-  if (!is_whitespace(buffer[*idx]))
+bool try_newline(size_t *idx, char *buffer, word *res) {
+  if (buffer[*idx] == '\n') {
+    res->value = std::string(1, '\n');
+    res->type = NEWLINE;
+    *idx += 1;
+    return true;
+  }
+  return false;
+}
+bool try_space(size_t *idx, char *buffer, word *res) {
+  if (buffer[*idx] == '\n' or buffer[*idx] != ' ') {
     return false;
+  }
   size_t copy = *idx;
-  while (is_whitespace(buffer[copy])) {
+  while (buffer[copy] == ' ') {
     ++copy;
   }
-  res->value = std::string(copy - *idx, '\0');
-  for (int i = 0; i < copy - *idx; ++i) {
-    res->value[i] = buffer[i + *idx];
-  }
-  res->type = WHITESPACE;
+  res->value = std::string(copy - *idx, ' ');
+  res->type = INDENT;
   *idx = copy;
   return true;
 }
@@ -297,7 +304,9 @@ std::vector<word> lexer(char *file_name) {
       words.push_back(current);
     } else if (try_operator(&idx_tokens, file_buffer, &current)) {
       words.push_back(current);
-    } else if (try_whitespace(&idx_tokens, file_buffer, &current)) {
+    } else if (try_newline(&idx_tokens, file_buffer, &current)) {
+      words.push_back(current);
+    } else if (try_space(&idx_tokens, file_buffer, &current)) {
       words.push_back(current);
     } else if (try_comment(&idx_tokens, file_buffer, &current)) {
       words.push_back(current);

@@ -17,115 +17,6 @@ NUM_TYPE parse_num_literal(word w) {
   return num;
 }
 
-bool try_binary_expr(std::vector<word> words, size_t *word_idx) {
-  size_t initial_word_idx = *word_idx;
-  for (size_t binary_expr_word_idx = 0; binary_expr_word_idx < words.size();
-       ++binary_expr_word_idx) {
-    word current_word = words[binary_expr_word_idx];
-    if (current_word.type == WHITESPACE and
-        current_word.value.find('\n') != std::string::npos) {
-      *word_idx = binary_expr_word_idx;
-      break;
-    } else if (current_word.type == WHITESPACE)
-      continue;
-    if (current_word.type != NUMBER_LITERAL and
-        current_word.type != OPERATOR and current_word.type != PUNCTUATION) {
-      return false;
-    } else if (current_word.type == PUNCTUATION and
-               (current_word.p_type != OPEN_PARENTH and
-                current_word.p_type != CLOSE_PARENTH)) {
-      return false;
-    }
-  }
-  std::stack<word> stk;
-  // checking if parentheses are balanced
-  for (auto it = words.begin() + initial_word_idx; it < words.end(); ++it) {
-    word w = *it;
-    if (w.type == PUNCTUATION) {
-      if (w.p_type == OPEN_PARENTH) {
-        stk.push(w);
-      } else if (stk.size() > 0 and w.p_type == CLOSE_PARENTH) {
-        stk.pop();
-      } else {
-        throw std::runtime_error("unbalanced parentheses");
-      }
-    }
-  }
-  return true;
-}
-
-bool check_object_access(std::vector<word> words) {}
-
-Expression parse_exact(std::vector<word> words) {
-  for (size_t word_idx = 0; word_idx < words.size();) {
-    if (check_object_access(std::vector<word>(words.begin() + word_idx,
-                                              words.begin() + word_idx + 4))) {
-    }
-  }
-}
-
-Expression parse2(std::vector<word> &words) {
-  size_t words_idx = 0;
-  while (words_idx < words.size()) {
-    word w = words[words_idx];
-    if (w.type == PUNCTUATION and w.p_type == OPEN_SQR_BR) {
-    } else if (w.type == KEYWORD) {
-      if (w.value == "if") {
-        // loop until you see something that is allowed to be in a condition
-        // i.e parentheses or conditional statements
-        size_t COLON_IDX = 0;
-        {
-          // check for colon ending the condition
-          size_t idx_copy = words_idx;
-          while (idx_copy < words.size()) {
-            if (words[idx_copy].type == PUNCTUATION and
-                words[idx_copy].p_type == COLON) {
-              break;
-            }
-            ++idx_copy;
-          }
-          if (words[idx_copy].type != PUNCTUATION or
-              words[idx_copy].p_type != COLON) {
-            throw std::runtime_error("syntax error:\n" +
-                                     words[words_idx].value);
-          }
-          COLON_IDX = idx_copy;
-        }
-        // we start parsing conditions here
-        // if there are any PUNCTUATION symbols that need a pair, then we gotta
-        // check for matching
-        {
-          std::stack<PUNCTUATION_TYPE> pair_check;
-          size_t idx_copy = words_idx;
-          while (idx_copy < COLON_IDX) {
-            if (words[idx_copy].type == PUNCTUATION and
-                (words[idx_copy].p_type == OPEN_SQR_BR or
-                 words[idx_copy].p_type == OPEN_PARENTH)) {
-              pair_check.push(words[idx_copy].p_type);
-            } else if (pair_check.size() > 0 and
-                       words[idx_copy].type == PUNCTUATION and
-                       ((words[idx_copy].p_type == CLOSE_PARENTH and
-                         pair_check.top() == OPEN_PARENTH) or
-                        (words[idx_copy].p_type == CLOSING_SQR_BR and
-                         pair_check.top() == OPEN_SQR_BR))) {
-              pair_check.pop();
-            }
-          }
-          assert(pair_check.size() == 0);
-        }
-        // we need a greedy matching solution so that it accurately matches what
-        // expression is what type.
-        // TODO
-      } else if (w.value == "elif") {
-      } else if (w.value == "else") {
-      } else if (w.value == "def") {
-      }
-    }
-  }
-}
-
-/* ------------------------------------------------------------ */
-
 std::vector<data_node> parse(std::vector<word> words) {
   std::vector<data_node> nodes;
   for (size_t i = 0; i < words.size();) {
@@ -144,11 +35,11 @@ std::vector<data_node> parse(std::vector<word> words) {
       switch (wrd.p_type) {
       case COLON:
         // COLON WILL EITHER BE A SLICE OR START OF NEW SCOPE OR TYPE ANNOTATION
-				data_node colon_node;
-				colon_node.val.t = WORD;
-				colon_node.val.obj = new word;
-				*(word*)colon_node.val.obj = wrd;
-				nodes.push_back(colon_node);
+        data_node colon_node;
+        colon_node.val.t = WORD;
+        colon_node.val.obj = new word;
+        *(word *)colon_node.val.obj = wrd;
+        nodes.push_back(colon_node);
         ++i;
         break;
       case OPEN_SQR_BR: {
@@ -309,13 +200,22 @@ std::vector<data_node> parse(std::vector<word> words) {
       nodes.push_back(keywrd);
       ++i;
       break;
-    case WHITESPACE:
+    case NEWLINE:
 
-      data_node whitespace_node;
-      whitespace_node.val.t = WORD;
-      whitespace_node.val.obj = new word;
-      *(word *)whitespace_node.val.obj = wrd;
-      nodes.push_back(whitespace_node);
+      data_node newline_node;
+      newline_node.val.t = WORD;
+      newline_node.val.obj = new word;
+      *(word *)newline_node.val.obj = wrd;
+      nodes.push_back(newline_node);
+      ++i;
+      break;
+    case INDENT:
+
+      data_node indent_node;
+      indent_node.val.t = WORD;
+      indent_node.val.obj = new word;
+      *(word *)indent_node.val.obj = wrd;
+      nodes.push_back(indent_node);
       ++i;
       break;
     case COMMENT:

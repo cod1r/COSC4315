@@ -76,7 +76,8 @@ data_node eval_rhs(std::vector<data_node> nodes,
           break;
         }
       } break;
-      case WHITESPACE:
+      case INDENT:
+      case NEWLINE:
         ++node_idx;
         break;
       }
@@ -111,46 +112,59 @@ data_node eval_rhs(std::vector<data_node> nodes,
           *(std::string *)current_node.val.obj;
       break;
     } else if (current_node.val.t == IDENTIFIER_NODE) {
-      if (symbol_table.find(*(std::string *)current_node.val.obj) ==
-          symbol_table.end()) {
-        throw std::runtime_error("undefined symbol");
-      }
-      final_value.val.t =
-          symbol_table[*(std::string *)current_node.val.obj].val.t;
-      if (final_value.val.t == NUMBER) {
-        final_value.val.obj = new long long;
-        *(long long *)final_value.val.obj =
-            *(long long *)symbol_table[*(std::string *)current_node.val.obj]
-                 .val.obj;
-      } else if (final_value.val.t == LIST) {
-        final_value.val.obj = new std::vector<long long>;
-        *(std::vector<long long> *)final_value.val.obj =
-            *(std::vector<long long> *)
-                 symbol_table[*(std::string *)current_node.val.obj]
-                     .val.obj;
-      }
-      ++node_idx;
-      for (size_t node_idx_local = node_idx; node_idx_local < nodes.size();
-           ++node_idx_local) {
-        if (nodes[node_idx_local].val.t == WORD) {
-          word temp_word = (*(word *)nodes[node_idx_local].val.obj);
-          if (temp_word.type == OPERATOR and temp_word.o_type == PLUS_SIGN) {
-            data_node r_val =
-                eval_rhs(std::vector<data_node>(
-                             nodes.begin() + node_idx_local + 1, nodes.end()),
-                         symbol_table);
-            if (final_value.val.t == NUMBER and r_val.val.t == NUMBER) {
-              *(long long *)final_value.val.obj += *(long long *)r_val.val.obj;
-            } else if (final_value.val.t == LIST and r_val.val.t == LIST) {
-              std::vector<long long> *lst =
-                  (std::vector<long long> *)final_value.val.obj;
-              std::vector<long long> r_val_lst =
-                  *(std::vector<long long> *)r_val.val.obj;
-              lst->insert(lst->end(), r_val_lst.begin(), r_val_lst.end());
-            } else {
-              throw std::runtime_error("mismatched types");
+      if (nodes[node_idx + 1].val.t == WORD and
+          (*(word *)nodes[node_idx + 1].val.obj).type == PUNCTUATION and
+          (*(word *)nodes[node_idx + 1].val.obj).p_type == OPEN_SQR_BR) {
+        data_node look_up = symbol_table[*(std::string *)current_node.val.obj];
+        size_t index = (*(NUM_TYPE *)nodes[node_idx + 2].val.obj);
+        final_value.val.t = NUMBER;
+        final_value.val.obj = new NUM_TYPE;
+        *(NUM_TYPE *)final_value.val.obj =
+            (*(std::vector<NUM_TYPE> *)look_up.val.obj)[index];
+        return final_value;
+      } else {
+        if (symbol_table.find(*(std::string *)current_node.val.obj) ==
+            symbol_table.end()) {
+          throw std::runtime_error("undefined symbol");
+        }
+        final_value.val.t =
+            symbol_table[*(std::string *)current_node.val.obj].val.t;
+        if (final_value.val.t == NUMBER) {
+          final_value.val.obj = new long long;
+          *(long long *)final_value.val.obj =
+              *(long long *)symbol_table[*(std::string *)current_node.val.obj]
+                   .val.obj;
+        } else if (final_value.val.t == LIST) {
+          final_value.val.obj = new std::vector<long long>;
+          *(std::vector<long long> *)final_value.val.obj =
+              *(std::vector<long long> *)
+                   symbol_table[*(std::string *)current_node.val.obj]
+                       .val.obj;
+        }
+        ++node_idx;
+        for (size_t node_idx_local = node_idx; node_idx_local < nodes.size();
+             ++node_idx_local) {
+          if (nodes[node_idx_local].val.t == WORD) {
+            word temp_word = (*(word *)nodes[node_idx_local].val.obj);
+            if (temp_word.type == OPERATOR and temp_word.o_type == PLUS_SIGN) {
+              data_node r_val =
+                  eval_rhs(std::vector<data_node>(
+                               nodes.begin() + node_idx_local + 1, nodes.end()),
+                           symbol_table);
+              if (final_value.val.t == NUMBER and r_val.val.t == NUMBER) {
+                *(long long *)final_value.val.obj +=
+                    *(long long *)r_val.val.obj;
+              } else if (final_value.val.t == LIST and r_val.val.t == LIST) {
+                std::vector<long long> *lst =
+                    (std::vector<long long> *)final_value.val.obj;
+                std::vector<long long> r_val_lst =
+                    *(std::vector<long long> *)r_val.val.obj;
+                lst->insert(lst->end(), r_val_lst.begin(), r_val_lst.end());
+              } else {
+                throw std::runtime_error("mismatched types");
+              }
+              return final_value;
             }
-            return final_value;
           }
         }
       }
@@ -213,7 +227,7 @@ void run(std::vector<data_node> nodes) {
                   eql_idx = check_idx;
                 } else if (nodes[check_idx].val.t == WORD and
                            (*(word *)nodes[check_idx].val.obj).type ==
-                               WHITESPACE and
+                               NEWLINE and
                            (*(word *)nodes[check_idx].val.obj)
                                    .value.find("\n") != std::string::npos) {
                   newline = check_idx;
@@ -253,7 +267,7 @@ void run(std::vector<data_node> nodes) {
               while (find_newline_idx < nodes.size()) {
                 if (nodes[find_newline_idx].val.t == WORD) {
                   word w = *(word *)nodes[find_newline_idx].val.obj;
-                  if (w.type == WHITESPACE and
+                  if (w.type == NEWLINE and
                       w.value.find("\n") != std::string::npos) {
                     break;
                   }
@@ -269,7 +283,7 @@ void run(std::vector<data_node> nodes) {
               loop = false;
             }
             break;
-          case WHITESPACE:
+          case INDENT:
             ++unknown_idx;
             break;
           }
@@ -342,8 +356,6 @@ void run(std::vector<data_node> nodes) {
         std::cout << std::endl;
         node_idx = node_idx_local;
       } else if (keyword == "if") {
-        // we need to be able to handle nested if statements as well.
-        // else blocks included
         size_t if_idx = node_idx;
         size_t colon_idx = node_idx;
         while (colon_idx < nodes.size()) {
@@ -355,14 +367,13 @@ void run(std::vector<data_node> nodes) {
           }
           ++colon_idx;
         }
-				if (colon_idx >= nodes.size()) {
-					throw std::runtime_error("no colon found");
-				}
+        if (colon_idx >= nodes.size()) {
+          throw std::runtime_error("no colon found");
+        }
         while (if_idx < nodes.size()) {
           if (nodes[if_idx].val.t == WORD) {
             word curr_word = *(word *)nodes[if_idx].val.obj;
             if (curr_word.type == OPERATOR) {
-
               size_t right_side_operand_idx = if_idx + 1;
               size_t left_side_operand_idx = if_idx + 1;
               while (left_side_operand_idx > node_idx) {
@@ -393,11 +404,13 @@ void run(std::vector<data_node> nodes) {
                     if (left.val.t == STRING) {
                       is_true = check_true<std::string>(
                           *(std::string *)left.val.obj,
-                          *(std::string *)nodes[right_side_operand_idx].val.obj, curr_word.o_type);
+                          *(std::string *)nodes[right_side_operand_idx].val.obj,
+                          curr_word.o_type);
                     } else if (left.val.t == NUMBER) {
                       is_true = check_true<NUM_TYPE>(
                           *(NUM_TYPE *)left.val.obj,
-                          *(NUM_TYPE *)nodes[right_side_operand_idx].val.obj, curr_word.o_type);
+                          *(NUM_TYPE *)nodes[right_side_operand_idx].val.obj,
+                          curr_word.o_type);
                     }
                   }
                 } else if (nodes[left_side_operand_idx].val.t !=
@@ -443,57 +456,90 @@ void run(std::vector<data_node> nodes) {
                       "type not implemented yet for if conditions");
                 }
               }
-							if (is_true) {
-								node_idx = colon_idx + 2;
-								break;
-							} else {
-								if (nodes[node_idx - 1].val.t == WORD and
-										(*(word*)nodes[node_idx - 1].val.obj).type == WHITESPACE) {
-									size_t indent_level = (*(word*)nodes[node_idx - 1].val.obj).value.length();
-									size_t else_block = if_idx + 1;
-									while (else_block < nodes.size()) {
-										if (nodes[else_block].val.t == KEYWORD_NODE) {
-											if (*(std::string*)nodes[else_block].val.obj == "else") {
-												if (nodes[else_block - 1].val.t == WORD and
-														(*(word*)nodes[else_block - 1].val.obj).type == WHITESPACE and
-														(*(word*)nodes[else_block - 1].val.obj).value.length() == indent_level) {
-													break;
-												}
-											}
-										}
-										++else_block;
-									}
-									if (else_block < nodes.size()) {
-										// plus 2 because of the colon
-										node_idx = else_block + 2;
-										break;
-									} else {
-										node_idx = else_block;
-									}
-								} else {
-									throw std::runtime_error("not whitespace");
-								}
-							}
+              if (is_true) {
+                node_idx = colon_idx + 2;
+                break;
+              } else {
+                size_t indent_level = 0;
+                if (nodes[node_idx - 1].val.t == WORD and
+                    (*(word *)nodes[node_idx - 1].val.obj).type == INDENT) {
+                  indent_level =
+                      (*(word *)nodes[node_idx - 1].val.obj).value.length();
+                }
+                size_t else_block = if_idx + 1;
+                while (else_block < nodes.size()) {
+                  if (nodes[else_block].val.t == KEYWORD_NODE) {
+                    if (*(std::string *)nodes[else_block].val.obj == "else") {
+                      size_t compare_indent_level = 0;
+                      if (nodes[else_block - 1].val.t == WORD and
+                          (*(word *)nodes[else_block - 1].val.obj).type ==
+                              INDENT) {
+                        compare_indent_level =
+                            (*(word *)nodes[else_block - 1].val.obj)
+                                .value.length();
+                      }
+                      if (compare_indent_level == indent_level) {
+                        break;
+                      }
+                    }
+                  }
+                  ++else_block;
+                }
+                if (else_block < nodes.size()) {
+                  // plus 2 because of the colon
+                  node_idx = else_block + 2;
+                  break;
+                } else {
+                  node_idx = else_block;
+                }
+              }
             }
           }
           ++if_idx;
         }
       } else if (keyword == "def") {
-				throw std::runtime_error("def not implemented yet");
-			} else if (keyword == "else") {
-				// we need to know indent levels somehow
+        throw std::runtime_error("def not implemented yet");
+      } else if (keyword == "else") {
+        size_t indent_lvl = 0;
+        if (nodes[node_idx - 1].val.t == WORD and
+            (*(word *)nodes[node_idx - 1].val.obj).type == INDENT) {
+          indent_lvl = (*(word *)nodes[node_idx - 1].val.obj).value.length();
+        }
+        size_t else_end = node_idx + 1;
+        while (else_end < nodes.size()) {
+          size_t compare_indent_lvl = 0;
+          if (nodes[else_end - 1].val.t == WORD and
+              (*(word *)nodes[else_end - 1].val.obj).type == INDENT) {
+            compare_indent_lvl =
+                (*(word *)nodes[else_end - 1].val.obj).value.length();
+          }
+          if (compare_indent_lvl == indent_lvl and
+                  (*(word *)nodes[else_end].val.obj).type != NEWLINE and
+                  (*(word *)nodes[else_end].val.obj).type != INDENT and
+                  (*(word *)nodes[else_end].val.obj).type != PUNCTUATION and
+                  ((nodes[else_end - 1].val.t == WORD and
+                   (*(word *)nodes[else_end - 1].val.obj).type == INDENT) or
+              (nodes[else_end - 1].val.t == WORD and
+               (*(word *)nodes[else_end - 1].val.obj).type == NEWLINE))) {
+            break;
+          }
+          ++else_end;
+        }
+        node_idx = else_end;
       } else {
         throw std::runtime_error("unimplemented keyword");
       }
     } break;
-		case NUMBER:
-			throw std::runtime_error(std::to_string((*(NUM_TYPE*)nodes[node_idx].val.obj)));
-			break;
+    case NUMBER:
+      throw std::runtime_error(
+          std::to_string((*(NUM_TYPE *)nodes[node_idx].val.obj)));
+      break;
     case WORD:
       ++node_idx;
       break;
     default:
-      std::cout << node_idx << " " << nodes.size() << " "  << current_node.val.t << std::endl;
+      std::cout << node_idx << " " << nodes.size() << " " << current_node.val.t
+                << std::endl;
       throw std::runtime_error("unimplemented node type");
       break;
     }
