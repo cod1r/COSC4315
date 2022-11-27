@@ -298,6 +298,11 @@ void run(std::vector<data_node> nodes) {
         size_t node_idx_local = node_idx;
         for (; node_idx_local < nodes.size(); ++node_idx_local) {
           if (nodes[node_idx_local].val.t == WORD and
+              (*(word *)nodes[node_idx_local].val.obj).type == NEWLINE) {
+            ++node_idx_local;
+            break;
+          }
+          if (nodes[node_idx_local].val.t == WORD and
               (*(word *)nodes[node_idx_local].val.obj).type == PUNCTUATION) {
             word temp_word = *(word *)nodes[node_idx_local].val.obj;
             if (temp_word.p_type == OPEN_PARENTH) {
@@ -499,6 +504,7 @@ void run(std::vector<data_node> nodes) {
         }
       } else if (keyword == "def") {
         throw std::runtime_error("def not implemented yet");
+
       } else if (keyword == "else") {
         size_t indent_lvl = 0;
         if (nodes[node_idx - 1].val.t == WORD and
@@ -514,13 +520,13 @@ void run(std::vector<data_node> nodes) {
                 (*(word *)nodes[else_end - 1].val.obj).value.length();
           }
           if (compare_indent_lvl == indent_lvl and
-                  (*(word *)nodes[else_end].val.obj).type != NEWLINE and
-                  (*(word *)nodes[else_end].val.obj).type != INDENT and
-                  (*(word *)nodes[else_end].val.obj).type != PUNCTUATION and
-                  ((nodes[else_end - 1].val.t == WORD and
-                   (*(word *)nodes[else_end - 1].val.obj).type == INDENT) or
-              (nodes[else_end - 1].val.t == WORD and
-               (*(word *)nodes[else_end - 1].val.obj).type == NEWLINE))) {
+              (*(word *)nodes[else_end].val.obj).type != NEWLINE and
+              (*(word *)nodes[else_end].val.obj).type != INDENT and
+              (*(word *)nodes[else_end].val.obj).type != PUNCTUATION and
+              ((nodes[else_end - 1].val.t == WORD and
+                (*(word *)nodes[else_end - 1].val.obj).type == INDENT) or
+               (nodes[else_end - 1].val.t == WORD and
+                (*(word *)nodes[else_end - 1].val.obj).type == NEWLINE))) {
             break;
           }
           ++else_end;
@@ -531,8 +537,7 @@ void run(std::vector<data_node> nodes) {
       }
     } break;
     case NUMBER:
-      throw std::runtime_error(
-          std::to_string((*(NUM_TYPE *)nodes[node_idx].val.obj)));
+      ++node_idx;
       break;
     case WORD:
       ++node_idx;
