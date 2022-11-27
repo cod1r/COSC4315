@@ -47,7 +47,7 @@ static const std::vector<std::string> PUNCTUATIONS = {
     ":", "[", "]", "\"", "(", ")", ".", ",", "\'",
 };
 static const std::vector<std::string> OPERATORS = {
-    "==", "!=", "<", ">", ">=", "<=", "//", "/", "+", "=", "*", "-",
+    "==", "!=", ">=", "<=", "//", "/", "+", "=", "*", "-", "<", ">",
 };
 static const std::vector<std::string> KEYWORDS = {
     "pass",  "def",    "if",    "elif", "else", "for",  "True",

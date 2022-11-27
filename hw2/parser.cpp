@@ -151,25 +151,10 @@ std::vector<data_node> parse(std::vector<word> words) {
     } break;
     case OPERATOR:
       switch (wrd.o_type) {
-      case EQL_SIGN: {
-
-        // ONLY CASE IS ASSIGNMENT
-        data_node eql;
-        eql.val.t = WORD;
-        eql.val.obj = new word;
-        *(word *)eql.val.obj = wrd;
-        nodes.push_back(eql);
-        ++i;
-      } break;
-      case PLUS_SIGN: {
-
-        data_node plus;
-        plus.val.t = WORD;
-        plus.val.obj = new word;
-        *(word *)plus.val.obj = wrd;
-        nodes.push_back(plus);
-        ++i;
-      } break;
+      case LESS_THAN:
+      case LESS_THAN_EQL_TO:
+      case EQL_SIGN:
+      case PLUS_SIGN:
       case EQUAL_BOOL: {
         data_node eql_bool;
         eql_bool.val.t = WORD;

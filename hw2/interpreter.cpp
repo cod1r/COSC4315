@@ -98,7 +98,7 @@ data_node eval_rhs(std::vector<data_node> nodes,
                          symbol_table);
             *(long long *)final_value.val.obj += *(long long *)r_val.val.obj;
             return final_value;
-          } else {
+          } else if (w.type == OPERATOR) {
             throw std::runtime_error("unimplemented operator");
           }
         } else {
@@ -121,6 +121,32 @@ data_node eval_rhs(std::vector<data_node> nodes,
         final_value.val.obj = new NUM_TYPE;
         *(NUM_TYPE *)final_value.val.obj =
             (*(std::vector<NUM_TYPE> *)look_up.val.obj)[index];
+        size_t find_plus = node_idx;
+        NUM_TYPE add_value = 0;
+        while (find_plus < nodes.size()) {
+          if (nodes[find_plus].val.t == WORD and
+              (*(word *)nodes[find_plus].val.obj).type == OPERATOR and
+              (*(word *)nodes[find_plus].val.obj).o_type == PLUS_SIGN) {
+            data_node rrhs =
+                eval_rhs(std::vector<data_node>(nodes.begin() + find_plus + 1,
+                                                nodes.end()),
+                         symbol_table);
+            ;
+            if (final_value.val.t == NUMBER and rrhs.val.t == NUMBER) {
+              *(NUM_TYPE *)final_value.val.obj += *(NUM_TYPE *)rrhs.val.obj;
+            } else if (final_value.val.t == LIST and rrhs.val.t == LIST) {
+              std::vector<NUM_TYPE> *lst =
+                  (std::vector<NUM_TYPE> *)final_value.val.obj;
+              std::vector<NUM_TYPE> rrhs_lst =
+                  *(std::vector<NUM_TYPE> *)rrhs.val.obj;
+              lst->insert(lst->end(), rrhs_lst.begin(), rrhs_lst.end());
+            } else {
+              throw std::runtime_error("mismatched types");
+            }
+            break;
+          }
+          ++find_plus;
+        }
         return final_value;
       } else {
         if (symbol_table.find(*(std::string *)current_node.val.obj) ==
