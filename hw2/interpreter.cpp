@@ -123,7 +123,31 @@ data_node eval_rhs(std::vector<data_node> nodes,
           (*(word *)nodes[node_idx + 1].val.obj).type == PUNCTUATION and
           (*(word *)nodes[node_idx + 1].val.obj).p_type == OPEN_SQR_BR) {
         data_node look_up = symbol_table[*(std::string *)current_node.val.obj];
-        size_t index = (*(NUM_TYPE *)nodes[node_idx + 2].val.obj);
+        size_t index = 0;
+        size_t index_idx = node_idx + 2;
+        while (index_idx < nodes.size()) {
+          if (nodes[index_idx].val.t == IDENTIFIER_NODE or
+              nodes[index_idx].val.t == NUMBER) {
+            if (nodes[index_idx].val.t == IDENTIFIER_NODE) {
+              if (symbol_table[*(std::string *)nodes[index_idx].val.obj]
+                      .val.t != NUMBER) {
+                std::cout
+                    << symbol_table[*(std::string *)nodes[index_idx].val.obj]
+                           .val.t
+                    << std::endl;
+                throw std::runtime_error("index not number");
+              }
+              index =
+                  *(NUM_TYPE *)
+                       symbol_table[*(std::string *)nodes[index_idx].val.obj]
+                           .val.obj;
+            } else {
+              index = *(NUM_TYPE *)nodes[index_idx].val.obj;
+            }
+            break;
+          }
+          ++index_idx;
+        }
         final_value.val.t = NUMBER;
         final_value.val.obj = new NUM_TYPE;
         *(NUM_TYPE *)final_value.val.obj =
@@ -231,7 +255,7 @@ void run(std::vector<data_node> nodes) {
   bool in_function = false;
   std::string function_name;
   size_t node_idx = 0;
-	std::string return_identifier_to;
+  std::string return_identifier_to;
   while (node_idx < nodes.size()) {
     data_node current_node = nodes[node_idx];
     switch (current_node.val.t) {
@@ -302,6 +326,68 @@ void run(std::vector<data_node> nodes) {
             } break;
             case COLON:
               break;
+            case OPEN_PARENTH: {
+              if (symbol_table[*(std::string *)current_node.val.obj].val.t !=
+                  FUNCTION) {
+                throw std::runtime_error(
+                    "invalid syntax. identifier is not a function type");
+              }
+              node_idx =
+                  (*(function_obj *)
+                        symbol_table[*(std::string *)current_node.val.obj]
+                            .val.obj)
+                      .start;
+              in_function = true;
+							function_name = *(std::string*)current_node.val.obj;
+							std::vector<data_node> initial_vals;
+              size_t initial_args_idx = unknown_idx + 1;
+              while (initial_args_idx < nodes.size()) {
+                if (nodes[initial_args_idx].val.t == WORD and
+                    (*(word *)nodes[initial_args_idx].val.obj).type ==
+                        PUNCTUATION and
+                    (*(word *)nodes[initial_args_idx].val.obj).p_type ==
+                        CLOSE_PARENTH) {
+                  break;
+                }
+                if (nodes[initial_args_idx].val.t == IDENTIFIER_NODE or
+                    nodes[initial_args_idx].val.t == STRING or
+                    nodes[initial_args_idx].val.t == NUMBER) {
+                  data_node temp_node;
+                  if (nodes[initial_args_idx].val.t == IDENTIFIER_NODE) {
+                    assert(
+                        symbol_table.find(
+                            *(std::string *)nodes[initial_args_idx].val.obj) !=
+                        symbol_table.end());
+                    temp_node.val.t = IDENTIFIER_NODE;
+                  } else {
+                    temp_node.val.t = nodes[initial_args_idx].val.t;
+                  }
+                  temp_node.val.obj = nodes[initial_args_idx].val.obj;
+                  initial_vals.push_back(temp_node);
+                }
+                ++initial_args_idx;
+              }
+              function_obj fn_obj =
+                  (*(function_obj *)symbol_table
+                        [*(std::string*)current_node.val.obj]
+                            .val.obj);
+              assert(initial_vals.size() == fn_obj.args.size());
+              assert(function_name.length() > 0);
+              for (size_t arg_idx = 0; arg_idx < fn_obj.args.size();
+                   ++arg_idx) {
+                if (initial_vals[arg_idx].val.t == IDENTIFIER_NODE) {
+                  symbol_table[fn_obj.args[arg_idx]] =
+                      symbol_table[*(std::string *)initial_vals[arg_idx]
+                                        .val.obj];
+                } else {
+                  symbol_table[fn_obj.args[arg_idx]] = initial_vals[arg_idx];
+                }
+              }
+              loop = false;
+            } break;
+            default:
+              throw std::runtime_error("unimplemented punct.");
+              break;
             }
           } break;
           case OPERATOR:
@@ -317,7 +403,6 @@ void run(std::vector<data_node> nodes) {
                 }
                 ++find_newline_idx;
               }
-
               size_t check_if_fun = unknown_idx + 1;
               while (check_if_fun < nodes.size() and !in_function) {
                 if (nodes[check_if_fun].val.t == WORD and
@@ -382,7 +467,7 @@ void run(std::vector<data_node> nodes) {
                                   .val.obj)
                             .start;
                     return_point = initial_args_idx + 1;
-										return_identifier_to = *(std::string*)current_node.val.obj;
+                    return_identifier_to = *(std::string *)current_node.val.obj;
                     goto skip;
                   }
                 }
@@ -678,24 +763,33 @@ void run(std::vector<data_node> nodes) {
 
         {
           while (function_idx < nodes.size()) {
+            if (nodes[function_idx].val.t == WORD and
+                (*(word *)nodes[function_idx].val.obj).type == NEWLINE and
+                function_idx + 1 < nodes.size() and
+                nodes[function_idx + 1].val.t == WORD and
+                (*(word *)nodes[function_idx + 1].val.obj).type != INDENT) {
+              break;
+            }
             if (nodes[function_idx].val.t == KEYWORD_NODE and
                 *(std::string *)nodes[function_idx].val.obj == "return") {
-              while (nodes[function_idx].val.t != IDENTIFIER_NODE) {
+              while (
+                  nodes[function_idx].val.t != IDENTIFIER_NODE or
+                  (nodes[function_idx].val.t == WORD and
+                   (*(word *)nodes[function_idx].val.obj).type == NEWLINE and
+                   function_idx + 1 < nodes.size() and
+                   nodes[function_idx + 1].val.t == WORD and
+                   (*(word *)nodes[function_idx + 1].val.obj).type != INDENT)) {
                 ++function_idx;
               }
-              (*(function_obj *)fun_node.val.obj).end = function_idx;
               break;
             }
             ++function_idx;
           }
+          (*(function_obj *)fun_node.val.obj).end = function_idx;
         }
 
         if (nodes[name].val.t != IDENTIFIER_NODE) {
-          throw std::runtime_error("invalid syntax for function");
-        }
-
-        if (nodes[function_idx].val.t != IDENTIFIER_NODE) {
-          throw std::runtime_error("invalid syntax for function");
+          throw std::runtime_error("invalid syntax for function1");
         }
 
         symbol_table[function_name] = fun_node;
@@ -728,23 +822,25 @@ void run(std::vector<data_node> nodes) {
         }
         node_idx = else_end;
       } else if (keyword == "return") {
-				in_function = false;
+        in_function = false;
         size_t value_idx = node_idx + 1;
         while (value_idx < nodes.size()) {
-					if (nodes[value_idx].val.t == IDENTIFIER_NODE or
-							nodes[value_idx].val.t == STRING or
-							nodes[value_idx].val.t == NUMBER) {
-						break;
-					}
+          if (nodes[value_idx].val.t == IDENTIFIER_NODE or
+              nodes[value_idx].val.t == STRING or
+              nodes[value_idx].val.t == NUMBER) {
+            break;
+          }
           ++value_idx;
         }
-				if (nodes[value_idx].val.t != IDENTIFIER_NODE and
-						nodes[value_idx].val.t != STRING and
-						nodes[value_idx].val.t != NUMBER) {
-					throw std::runtime_error("syntax error: expected return value");
-				}
-				symbol_table[return_identifier_to] = symbol_table[*(std::string*)nodes[value_idx].val.obj + "_" + function_name];
-				node_idx = return_point;
+        if (nodes[value_idx].val.t != IDENTIFIER_NODE and
+            nodes[value_idx].val.t != STRING and
+            nodes[value_idx].val.t != NUMBER) {
+          throw std::runtime_error("syntax error: expected return value");
+        }
+        symbol_table[return_identifier_to] =
+            symbol_table[*(std::string *)nodes[value_idx].val.obj + "_" +
+                         function_name];
+        node_idx = return_point;
       } else {
         throw std::runtime_error("unimplemented keyword");
       }
