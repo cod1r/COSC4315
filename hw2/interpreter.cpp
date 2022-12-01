@@ -37,6 +37,9 @@ data_node eval_rhs(std::vector<data_node> nodes,
                   break;
                 }
               }
+						} else if (temp_node.val.t == IDENTIFIER_NODE) {
+              (*(std::vector<NUM_TYPE> *)final_value.val.obj)
+                  .push_back(*(NUM_TYPE *)symbol_table[*(std::string*)temp_node.val.obj].val.obj);
             } else {
               throw std::runtime_error("type not implemented yet");
             }
@@ -123,60 +126,141 @@ data_node eval_rhs(std::vector<data_node> nodes,
           (*(word *)nodes[node_idx + 1].val.obj).type == PUNCTUATION and
           (*(word *)nodes[node_idx + 1].val.obj).p_type == OPEN_SQR_BR) {
         data_node look_up = symbol_table[*(std::string *)current_node.val.obj];
-        size_t index = 0;
-        size_t index_idx = node_idx + 2;
-        while (index_idx < nodes.size()) {
-          if (nodes[index_idx].val.t == IDENTIFIER_NODE or
-              nodes[index_idx].val.t == NUMBER) {
-            if (nodes[index_idx].val.t == IDENTIFIER_NODE) {
-              if (symbol_table[*(std::string *)nodes[index_idx].val.obj]
-                      .val.t != NUMBER) {
-                std::cout
-                    << symbol_table[*(std::string *)nodes[index_idx].val.obj]
-                           .val.t
-                    << std::endl;
-                throw std::runtime_error("index not number");
-              }
-              index =
-                  *(NUM_TYPE *)
-                       symbol_table[*(std::string *)nodes[index_idx].val.obj]
-                           .val.obj;
-            } else {
-              index = *(NUM_TYPE *)nodes[index_idx].val.obj;
-            }
+        ssize_t colon = -1;
+        for (size_t colon_idx = node_idx; colon_idx < nodes.size();
+             ++colon_idx) {
+          if (nodes[colon_idx].val.t == WORD and
+              (*(word *)nodes[colon_idx].val.obj).type == PUNCTUATION and
+              (*(word *)nodes[colon_idx].val.obj).p_type == COLON) {
+            colon = colon_idx;
             break;
           }
-          ++index_idx;
         }
-        final_value.val.t = NUMBER;
-        final_value.val.obj = new NUM_TYPE;
-        *(NUM_TYPE *)final_value.val.obj =
-            (*(std::vector<NUM_TYPE> *)look_up.val.obj)[index];
-        size_t find_plus = node_idx;
-        NUM_TYPE add_value = 0;
-        while (find_plus < nodes.size()) {
-          if (nodes[find_plus].val.t == WORD and
-              (*(word *)nodes[find_plus].val.obj).type == OPERATOR and
-              (*(word *)nodes[find_plus].val.obj).o_type == PLUS_SIGN) {
-            data_node rrhs =
-                eval_rhs(std::vector<data_node>(nodes.begin() + find_plus + 1,
-                                                nodes.end()),
-                         symbol_table, in_function, function_name);
-            ;
-            if (final_value.val.t == NUMBER and rrhs.val.t == NUMBER) {
-              *(NUM_TYPE *)final_value.val.obj += *(NUM_TYPE *)rrhs.val.obj;
-            } else if (final_value.val.t == LIST and rrhs.val.t == LIST) {
-              std::vector<NUM_TYPE> *lst =
-                  (std::vector<NUM_TYPE> *)final_value.val.obj;
-              std::vector<NUM_TYPE> rrhs_lst =
-                  *(std::vector<NUM_TYPE> *)rrhs.val.obj;
-              lst->insert(lst->end(), rrhs_lst.begin(), rrhs_lst.end());
-            } else {
-              throw std::runtime_error("mismatched types");
-            }
+        size_t clsing = node_idx + 1;
+        while (clsing < nodes.size()) {
+          if (nodes[clsing].val.t == WORD and
+              (*(word *)nodes[clsing].val.obj).type == PUNCTUATION and
+              (*(word *)nodes[clsing].val.obj).p_type == CLOSING_SQR_BR) {
             break;
           }
-          ++find_plus;
+          ++clsing;
+        }
+        if (colon != -1) {
+          size_t beg_idx = node_idx + 1;
+          while (beg_idx < colon) {
+            if (nodes[beg_idx].val.t == IDENTIFIER_NODE or
+                nodes[beg_idx].val.t == NUMBER) {
+              break;
+            }
+            ++beg_idx;
+          }
+          size_t end_idx = clsing;
+          while (end_idx > colon) {
+            if (nodes[end_idx].val.t == IDENTIFIER_NODE or
+                nodes[end_idx].val.t == NUMBER) {
+              break;
+            }
+            --end_idx;
+          }
+          if (nodes[beg_idx].val.t == IDENTIFIER_NODE or
+              nodes[end_idx].val.t == IDENTIFIER_NODE) {
+            throw std::runtime_error(
+                "did not write code for if things were identifiers");
+          }
+          size_t beg =
+              (beg_idx < colon ? *(NUM_TYPE *)nodes[beg_idx].val.obj : 0);
+          size_t end =
+              (end_idx > colon
+                   ? *(NUM_TYPE *)nodes[end_idx].val.obj
+                   : (*(std::vector<NUM_TYPE> *)look_up.val.obj).size());
+          final_value.val.t = LIST;
+          final_value.val.obj = new std::vector<NUM_TYPE>;
+          for (size_t new_lst_idx = beg; new_lst_idx < end; ++new_lst_idx) {
+            (*(std::vector<NUM_TYPE> *)final_value.val.obj)
+                .push_back((*(std::vector<NUM_TYPE> *)look_up.val.obj)
+                               .at(new_lst_idx));
+          }
+          size_t find_plus = node_idx;
+          while (find_plus < nodes.size()) {
+            if (nodes[find_plus].val.t == WORD and
+                (*(word *)nodes[find_plus].val.obj).type == OPERATOR and
+                (*(word *)nodes[find_plus].val.obj).o_type == PLUS_SIGN) {
+              data_node rrhs =
+                  eval_rhs(std::vector<data_node>(nodes.begin() + find_plus + 1,
+                                                  nodes.end()),
+                           symbol_table, in_function, function_name);
+              ;
+              if (final_value.val.t == NUMBER and rrhs.val.t == NUMBER) {
+                *(NUM_TYPE *)final_value.val.obj += *(NUM_TYPE *)rrhs.val.obj;
+              } else if (final_value.val.t == LIST and rrhs.val.t == LIST) {
+                std::vector<NUM_TYPE> *lst =
+                    (std::vector<NUM_TYPE> *)final_value.val.obj;
+                std::vector<NUM_TYPE> rrhs_lst =
+                    *(std::vector<NUM_TYPE> *)rrhs.val.obj;
+                lst->insert(lst->end(), rrhs_lst.begin(), rrhs_lst.end());
+              } else {
+                throw std::runtime_error("mismatched types");
+              }
+              break;
+            }
+            ++find_plus;
+          }
+          return final_value;
+        } else {
+          size_t index = 0;
+          size_t index_idx = node_idx + 2;
+          while (index_idx < nodes.size()) {
+            if (nodes[index_idx].val.t == IDENTIFIER_NODE or
+                nodes[index_idx].val.t == NUMBER) {
+              if (nodes[index_idx].val.t == IDENTIFIER_NODE) {
+                if (symbol_table[*(std::string *)nodes[index_idx].val.obj]
+                        .val.t != NUMBER) {
+                  std::cout
+                      << symbol_table[*(std::string *)nodes[index_idx].val.obj]
+                             .val.t
+                      << std::endl;
+                  throw std::runtime_error("index not number");
+                }
+                index =
+                    *(NUM_TYPE *)
+                         symbol_table[*(std::string *)nodes[index_idx].val.obj + (in_function ? "_" + function_name: "")]
+                             .val.obj;
+              } else {
+                index = *(NUM_TYPE *)nodes[index_idx].val.obj;
+              }
+              break;
+            }
+            ++index_idx;
+          }
+          final_value.val.t = NUMBER;
+          final_value.val.obj = new NUM_TYPE;
+          *(NUM_TYPE *)final_value.val.obj =
+              (*(std::vector<NUM_TYPE> *)look_up.val.obj)[index];
+          size_t find_plus = node_idx;
+          while (find_plus < nodes.size()) {
+            if (nodes[find_plus].val.t == WORD and
+                (*(word *)nodes[find_plus].val.obj).type == OPERATOR and
+                (*(word *)nodes[find_plus].val.obj).o_type == PLUS_SIGN) {
+              data_node rrhs =
+                  eval_rhs(std::vector<data_node>(nodes.begin() + find_plus + 1,
+                                                  nodes.end()),
+                           symbol_table, in_function, function_name);
+              ;
+              if (final_value.val.t == NUMBER and rrhs.val.t == NUMBER) {
+                *(NUM_TYPE *)final_value.val.obj += *(NUM_TYPE *)rrhs.val.obj;
+              } else if (final_value.val.t == LIST and rrhs.val.t == LIST) {
+                std::vector<NUM_TYPE> *lst =
+                    (std::vector<NUM_TYPE> *)final_value.val.obj;
+                std::vector<NUM_TYPE> rrhs_lst =
+                    *(std::vector<NUM_TYPE> *)rrhs.val.obj;
+                lst->insert(lst->end(), rrhs_lst.begin(), rrhs_lst.end());
+              } else {
+                throw std::runtime_error("mismatched types");
+              }
+              break;
+            }
+            ++find_plus;
+          }
         }
         return final_value;
       } else {
@@ -263,7 +347,7 @@ void run(std::vector<data_node> nodes) {
       size_t unknown_idx = node_idx + 1;
       bool loop = true;
       while (loop) {
-        if (nodes[unknown_idx].val.t == WORD) {
+        if (unknown_idx < nodes.size() and nodes[unknown_idx].val.t == WORD) {
           word wrd = *(word *)nodes[unknown_idx].val.obj;
           switch (wrd.type) {
           case PUNCTUATION: {
@@ -295,9 +379,7 @@ void run(std::vector<data_node> nodes) {
                   eql_idx = check_idx;
                 } else if (nodes[check_idx].val.t == WORD and
                            (*(word *)nodes[check_idx].val.obj).type ==
-                               NEWLINE and
-                           (*(word *)nodes[check_idx].val.obj)
-                                   .value.find("\n") != std::string::npos) {
+                               NEWLINE) {
                   newline = check_idx;
                   break;
                 }
@@ -310,6 +392,25 @@ void run(std::vector<data_node> nodes) {
                 throw std::runtime_error(
                     "cannot do subscript on undefined identifier");
               }
+              ssize_t clsing = -1;
+							for (size_t clsing_idx = unknown_idx + 1; clsing < newline; ++clsing_idx) {
+                if (nodes[clsing_idx].val.t == WORD and
+                    (*(word *)nodes[clsing_idx].val.obj).type == PUNCTUATION and
+                    (*(word *)nodes[clsing_idx].val.obj).p_type == CLOSING_SQR_BR) {
+                  clsing = clsing_idx;
+                  break;
+                }
+							}
+              ssize_t colon = -1;
+              for (size_t colon_idx = unknown_idx + 1; colon_idx < clsing;
+                   ++colon_idx) {
+                if (nodes[colon_idx].val.t == WORD and
+                    (*(word *)nodes[colon_idx].val.obj).type == PUNCTUATION and
+                    (*(word *)nodes[colon_idx].val.obj).p_type == COLON) {
+                  colon = colon_idx;
+                  break;
+                }
+              }
               std::vector<NUM_TYPE> *list_obj =
                   (std::vector<NUM_TYPE> *)
                       symbol_table[*(std::string *)current_node.val.obj]
@@ -318,13 +419,51 @@ void run(std::vector<data_node> nodes) {
                   eval_rhs(std::vector<data_node>(nodes.begin() + eql_idx + 1,
                                                   nodes.begin() + newline),
                            symbol_table, in_function, function_name);
-              if (rhs.val.t == NUMBER) {
-                (*list_obj)[index] = *(NUM_TYPE *)rhs.val.obj;
+              if (colon != -1) {
+                if (rhs.val.t != LIST) {
+                  throw std::runtime_error("can only assign list to list");
+                }
+                size_t beg = unknown_idx;
+                while (beg < colon) {
+                  if (nodes[beg].val.t == IDENTIFIER_NODE or
+                      nodes[beg].val.t == NUMBER) {
+                    break;
+                  }
+                  ++beg;
+                }
+                size_t end = clsing;
+                while (end > colon) {
+                  if (nodes[end].val.t == IDENTIFIER_NODE or
+                      nodes[end].val.t == NUMBER) {
+                    break;
+                  }
+                  --end;
+                }
+                if (nodes[beg].val.t == IDENTIFIER_NODE or
+                    nodes[end].val.t == IDENTIFIER_NODE) {
+                  throw std::runtime_error(
+                      "did not write code for if things were identifiers");
+                }
+                size_t beg_num =
+                    (beg != colon ? *(NUM_TYPE *)nodes[beg].val.obj : 0);
+                size_t end_num = (end != colon ? *(NUM_TYPE *)nodes[end].val.obj
+                                               : list_obj->size());
+                list_obj->erase(list_obj->begin() + beg_num,
+                                list_obj->begin() + end_num);
+                list_obj->insert(
+                    list_obj->begin() + beg_num,
+                    (*(std::vector<NUM_TYPE> *)rhs.val.obj).begin(),
+                    (*(std::vector<NUM_TYPE> *)rhs.val.obj).end());
+              } else {
+                if (rhs.val.t == NUMBER) {
+                  (*list_obj)[index] = *(NUM_TYPE *)rhs.val.obj;
+                }
               }
               node_idx = newline + 1;
               loop = false;
             } break;
             case COLON:
+															throw std::runtime_error("colon");
               break;
             case OPEN_PARENTH: {
               if (symbol_table[*(std::string *)current_node.val.obj].val.t !=
@@ -338,8 +477,8 @@ void run(std::vector<data_node> nodes) {
                             .val.obj)
                       .start;
               in_function = true;
-							function_name = *(std::string*)current_node.val.obj;
-							std::vector<data_node> initial_vals;
+              function_name = *(std::string *)current_node.val.obj;
+              std::vector<data_node> initial_vals;
               size_t initial_args_idx = unknown_idx + 1;
               while (initial_args_idx < nodes.size()) {
                 if (nodes[initial_args_idx].val.t == WORD and
@@ -368,8 +507,8 @@ void run(std::vector<data_node> nodes) {
                 ++initial_args_idx;
               }
               function_obj fn_obj =
-                  (*(function_obj *)symbol_table
-                        [*(std::string*)current_node.val.obj]
+                  (*(function_obj *)
+                        symbol_table[*(std::string *)current_node.val.obj]
                             .val.obj);
               assert(initial_vals.size() == fn_obj.args.size());
               assert(function_name.length() > 0);
@@ -491,10 +630,16 @@ void run(std::vector<data_node> nodes) {
             }
             break;
           case INDENT:
-            ++unknown_idx;
-            break;
+					case NEWLINE:
+						//std::cout << *(std::string*)current_node.val.obj << " " << wrd.type << std::endl;
+						//throw std::runtime_error("whitespace");
+						++unknown_idx;
+						break;
+					default: throw std::runtime_error("unimplemented word type: " + std::to_string(wrd.type)); break;
           }
-        }
+        } else {
+					break;
+				}
       }
     } break;
     case KEYWORD_NODE: {
@@ -527,7 +672,8 @@ void run(std::vector<data_node> nodes) {
             }
           } else if (nodes[node_idx_local].val.t == NUMBER or
                      nodes[node_idx_local].val.t == IDENTIFIER_NODE or
-                     nodes[node_idx_local].val.t == STRING) {
+                     nodes[node_idx_local].val.t == STRING or
+                     nodes[node_idx_local].val.t == LIST) {
             print_values.push_back(nodes[node_idx_local]);
           }
         }
@@ -551,8 +697,9 @@ void run(std::vector<data_node> nodes) {
                        symbol_table[*(std::string *)prnt_value_node.val.obj]
                            .val.obj;
               std::cout << "[";
-              for (NUM_TYPE num : lst) {
-                if (num != lst.back()) {
+              for (size_t idx = 0; idx < lst.size(); ++idx) {
+                NUM_TYPE num = lst.at(idx);
+                if (idx != lst.size() - 1) {
                   std::cout << num << ", ";
                 } else {
                   std::cout << num;
@@ -587,14 +734,14 @@ void run(std::vector<data_node> nodes) {
             word curr_word = *(word *)nodes[if_idx].val.obj;
             if (curr_word.type == OPERATOR) {
               size_t right_side_operand_idx = if_idx + 1;
-              size_t left_side_operand_idx = if_idx - 1;
-              while (left_side_operand_idx > node_idx) {
+              size_t left_side_operand_idx = node_idx + 1;
+              while (left_side_operand_idx < if_idx) {
                 if (nodes[left_side_operand_idx].val.t == IDENTIFIER_NODE or
                     nodes[left_side_operand_idx].val.t == NUMBER or
                     nodes[left_side_operand_idx].val.t == STRING) {
                   break;
                 }
-                --left_side_operand_idx;
+                ++left_side_operand_idx;
               }
               while (right_side_operand_idx < colon_idx) {
                 if (nodes[right_side_operand_idx].val.t == IDENTIFIER_NODE or
@@ -612,7 +759,18 @@ void run(std::vector<data_node> nodes) {
                   data_node left =
                       symbol_table[*(std::string *)nodes[left_side_operand_idx]
                                         .val.obj];
-                  if (nodes[right_side_operand_idx].val.t == left.val.t) {
+                  if (left.val.t == LIST) {
+                    size_t index_idx = left_side_operand_idx;
+                    while (nodes[index_idx].val.t != NUMBER) {
+                      ++index_idx;
+                    }
+                    is_true = check_true<NUM_TYPE>(
+                        (*(std::vector<NUM_TYPE> *)left.val.obj)
+                            .at(*(NUM_TYPE *)nodes[index_idx].val.obj),
+                        *(NUM_TYPE *)nodes[right_side_operand_idx].val.obj,
+                        curr_word.o_type);
+                  } else if (nodes[right_side_operand_idx].val.t ==
+                             left.val.t) {
                     if (left.val.t == STRING) {
                       is_true = check_true<std::string>(
                           *(std::string *)left.val.obj,
@@ -623,7 +781,11 @@ void run(std::vector<data_node> nodes) {
                           *(NUM_TYPE *)left.val.obj,
                           *(NUM_TYPE *)nodes[right_side_operand_idx].val.obj,
                           curr_word.o_type);
+                    } else {
+                      throw std::runtime_error("unimplemented type comparison");
                     }
+                  } else {
+                    throw std::runtime_error("not the same types");
                   }
                 } else if (nodes[left_side_operand_idx].val.t !=
                                IDENTIFIER_NODE and
